@@ -1,5 +1,18 @@
 
-> **Completed: Mar 23, 2022*
+>**Completed: Mar 23, 2022*
+
+### Simplified A-Priori Algorithm
+
+The A-Priori algorithm utilizes the subset property for frequent itemsets to enable significant pruning of the space for possible itemset combinations. Using all possible 2-partitions of the itemset, where neither partition is empty, generates all rules for the set. Execution of armin.py generates only the rules whose support and confidence is greater or equal to the min support percentage and min confidence. Assuming user-given min support percentage and min confidence,the script conducts process starting with CFI(1) and takes Step i until terminating on step k, when CFI(k+1) is empty. The following describes i-th step:
+
+**Step i:**  
+
+• Consider all frequent itemsets of size i. Denoted as CFI(i).  
+• Generate support percentage from support count for CFI(i)
+• Support percentage of CFI(i) greater than or equal to min support percentage become verified frequent itemsets VFI(i).  
+• Using subset property, generate all plausible candidate itemsets of size CFI(i + 1) from itemsets in VFI(i) .
+
+---
 
 > **Input Format**
 >* input.csv as test input file 
@@ -21,19 +34,4 @@
 >
 
 ---
-
-### Simplified A-Priori Algorithm
-
-The A-Priori algorithm utilizes the subset property for frequent itemsets to enable significant pruning of the space for possible itemset combinations. Assuming user-given min support percentage and min confidence,the script conducts process starting with CFI(1) and takes Step i until terminating on step k, when CFI(k+1) is empty. The following describes i-th step:
-
-**Step i:**  
-
-• Consider all frequent itemsets of size i. Denoted as CFI(i).  
-• Generate support percentage from support count for CFI(i)
-• Support percentage of CFI(i) greater than or equal to min support percentage become verified frequent itemsets VFI(i).  
-• Using subset property, generate all plausible candidate itemsets of size CFI(i + 1) from itemsets in VFI(i) .
-
-Using all possible 2-partitions of the itemset, where neither partition is empty, generates all rules for the set. Execution of armin.py generates only the rules whose support and confidence is greater or equal to the min support percentage and min confidence. 
----
-
 
