@@ -22,10 +22,9 @@ The A-Priori algorithm utilizes the subset property for frequent itemsets to ena
 > * Address presence of whitespace in input csv.
 
 > **Output Format** Outputs a CSV file where:  
-`S,support_percentage,itemA,itemB,itemC, ...`  
-> denotes a frequent item**s**et 
-`R,support_percentage,confidence,itemD,itemE, ...,’=>’,itemF,itemG, ...  `  
-> denotes an association **r**ule. 
+>`S,support_percentage,itemA,itemB,itemC, ...` denotes a frequent item**s**et
+>`R,support_percentage,confidence,itemD,itemE, ...,’=>’,itemF,itemG, ...  ` denotes an association **r**ule. 
+
 > Lists all items in the frequent itemset case, left, and right of the => sign in the association rule case in lexicographic order.
 > `support_percentage` 
 > denotes support % of the specific frequent itemset/association rule greater than user-specified min_support_percentage.
