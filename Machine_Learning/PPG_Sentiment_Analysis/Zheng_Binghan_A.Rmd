@@ -1,0 +1,546 @@
+---
+title: "Final_Project - Regression and Classification A"
+author: "Binghan Zheng"
+date: "3/29/2022"
+output: html_document
+---
+# SetUp
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Libraries
+
+```{r}
+library(tidyverse)
+library(fastDummies)
+library(caret)
+```
+
+#Preparing the Data
+
+```{r}
+df_all <- readr::read_csv("final_project_train.csv", col_names = TRUE)
+df_all <- dummy_cols(df_all, select_columns = 'region')
+df_all <- dummy_cols(df_all, select_columns = 'customer')
+df_all$log_response <- log(df_all$response)
+df_all<-df_all %>% 
+  mutate(outcome = ifelse(outcome == 'event', 1,0))
+df_all
+```
+
+#Model 1 Categorical Linear Additive
+
+```{r, eval =TRUE}
+mod1 <- lm( log_response ~ region_XX + region_YY + region_ZZ + customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q, data = df_all)
+```
+
+#Model 2 Continuous: Linear Additive 
+
+```{r ,eval=TRUE}
+mod2 <- lm( log_response ~ xa_01 + 
+              xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              
+              xw_01 + xw_02 + xw_03 , data = df_all)
+
+
+```
+
+#Model 3: Categorial and Continuous Linear Additive
+
+```{r,eval =TRUE}
+mod3 <- lm( response ~ 
+              region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M + 
+              customer_Other + customer_Q + xa_01 + 
+              xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03, data = df_all)
+
+```
+
+#Model 4: Categorical vs Continuous Interactions Linear Additive: Region
+
+```{r,eval =TRUE}
+mod4 <- lm( log_response ~ 
+              (xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 + xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 + xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 + xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 + xw_01 + xw_02 + xw_03) *
+  (region_XX + region_YY + region_ZZ), data = df_all)
+
+```
+
+#Model 5: Categorical vs Continuous Interactions Linear Additive: Customer
+
+```{r,eval =TRUE}
+mod5 <- lm( log_response ~ 
+              
+              (xa_01 +xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 + xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 + xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 + xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 + xw_01 + xw_02 + xw_03) *
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q), data = df_all)
+```
+
+#Model 6: All Pairwise Interaction
+
+```{r,eval =TRUE}
+mod6 <- lm( log_response ~ (xa_01 + 
+              xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03)^2 , data = df_all)
+```
+
+#Model 7
+
+```{r}
+df_a <- 3
+df_b <- 3
+df_s <- 3
+df_n <- 3
+df_w <- 3
+
+mod7 <- lm( log_response ~ 
+              
+              splines::ns(xa_01, df_a) + splines::ns(xa_02, df_a) + splines::ns(xa_03, df_a) +
+              splines::ns(xa_04, df_a) +
+              splines::ns(xa_05, df_a) + splines::ns(xa_06, df_a) + splines::ns(xa_07, df_a) +
+              splines::ns(xa_08, df_a) +
+              
+              splines::ns(xb_01, df_b) + splines::ns(xb_02, df_b) +  splines::ns(xb_03, df_b) +
+              splines::ns(xb_04, df_b) +
+              splines::ns(xb_05, df_b) + splines::ns(xb_06, df_b) +  splines::ns(xb_07, df_b) +
+              splines::ns(xb_08, df_b) + 
+              
+              splines::ns(xs_01, df_s) + splines::ns(xs_02, df_s) + splines::ns(xs_03, df_s) +
+              splines::ns(xs_04, df_s) +
+              splines::ns(xs_05, df_s) + splines::ns(xs_06, df_s) +
+              
+              splines::ns(xn_01, df_n) + splines::ns(xn_02, df_n) + splines::ns(xn_03, df_n) +
+              splines::ns(xn_04, df_n) +
+              splines::ns(xn_05, df_n) + splines::ns(xn_06, df_n) + splines::ns(xn_07, df_n) +
+              splines::ns(xn_08, df_n) +
+      
+              splines::ns(xw_01, df_w) + splines::ns(xw_02, df_w) + splines::ns(xw_03, df_w),
+              data = df_all)
+
+```
+
+
+#Model 8 - Splines Interact Customer
+
+```{r}
+df_a <- 3
+df_b <- 3
+df_s <- 3
+df_n <- 3
+df_w <- 3
+
+mod8 <- lm( log_response ~ 
+              (splines::ns(xa_01, df_a) + splines::ns(xa_02, df_a) +
+              splines::ns(xa_03, df_a) + splines::ns(xa_04, df_a) +
+              splines::ns(xa_05, df_a) + splines::ns(xa_06, df_a) +
+              splines::ns(xa_07, df_a) + splines::ns(xa_08, df_a) +
+                
+              splines::ns(xb_01, df_b) + splines::ns(xb_02, df_b) + 
+              splines::ns(xb_03, df_b) + splines::ns(xb_04, df_b) +
+              splines::ns(xb_05, df_b) + splines::ns(xb_06, df_b) +
+              splines::ns(xb_07, df_b) + splines::ns(xb_08, df_b) + 
+                
+              splines::ns(xs_01, df_s) + splines::ns(xs_02, df_s) +
+              splines::ns(xs_03, df_s) + splines::ns(xs_04, df_s) +
+              splines::ns(xs_05, df_s) + splines::ns(xs_06, df_s) +
+                
+              splines::ns(xn_01, df_n) + splines::ns(xn_02, df_n) +
+              splines::ns(xn_03, df_n) + splines::ns(xn_04, df_n) +
+              splines::ns(xn_05, df_n) + splines::ns(xn_06, df_n) +
+              splines::ns(xn_07, df_n) + splines::ns(xn_08, df_n) +
+                
+              splines::ns(xw_01, df_w) + splines::ns(xw_02, df_w) +
+              splines::ns(xw_03, df_w)) *
+                
+  (customer_A + customer_B + customer_D + customer_E + customer_G +
+  customer_K + customer_M +  customer_Other + customer_Q),
+    data = df_all)
+```
+
+#Model 9 - Splines Interact Region
+
+```{r}
+df_a <- 3
+df_b <- 3
+df_s <- 3
+df_n <- 3
+df_w <- 3
+
+
+mod9 <- lm( log_response ~ 
+              
+      (splines::ns(xa_01, df_a) +splines::ns(xa_02, df_a) + splines::ns(xa_03, df_a) + splines::ns(xa_04, df_a) +
+      splines::ns(xa_05, df_a) + splines::ns(xa_06, df_a) + splines::ns(xa_07, df_a) + splines::ns(xa_08, df_a) +
+              
+      splines::ns(xb_01, df_b) + splines::ns(xb_02, df_b) +  splines::ns(xb_03, df_b) + splines::ns(xb_04, df_b)+ splines::ns(xb_05, df_b) + splines::ns(xb_06, df_b) +  splines::ns(xb_07, df_b) + splines::ns(xb_08, df_b) + 
+              
+  splines::ns(xs_01, df_s) + splines::ns(xs_02, df_s) + splines::ns(xs_03, df_s) + splines::ns(xs_04, df_s) +
+  splines::ns(xs_05, df_s) + splines::ns(xs_06, df_s) +
+              
+  splines::ns(xn_01, df_n) + splines::ns(xn_02, df_n) + splines::ns(xn_03, df_n) + splines::ns(xn_04, df_n) +
+  splines::ns(xn_05, df_n) + splines::ns(xn_06, df_n) + splines::ns(xn_07, df_n) + splines::ns(xn_08, df_n) +
+              
+  splines::ns(xw_01, df_w) + splines::ns(xw_02, df_w) + splines::ns(xw_03, df_w)) *
+  (region_XX + region_YY + region_ZZ),
+    
+  data = df_all)
+```
+
+#Model Evaluation
+
+```{r, eval=TRUE}
+mod_performace<-bind_rows(
+broom::glance(mod1),
+broom::glance(mod2),
+broom::glance(mod3),
+broom::glance(mod4),
+broom::glance(mod5),
+broom::glance(mod6),
+broom::glance(mod7),
+broom::glance(mod8),
+broom::glance(mod9))
+
+mod_performace
+```
+
+##Top 3 Model Coef Plot
+
+#Best Model
+
+- Performance Metric Used in Determining the best models: R-Squared.
+
+Reasoning: I want to focus around determining the strength of the correlation between the predictors and the response. In focusing around these models of high r-squared values, we can also narrow down those predictors which are most significant of which, according to the plot(varImp(mod8)) are: 
+
+
+```{r, fig.width=30, fig.height=30}
+# Mod 8
+coefplot::coefplot(mod8)
+```
+
+#Second Best Model
+
+```{r, fig.width=30, fig.height=30}
+# Mod 6
+coefplot::coefplot(mod6)
+```
+
+#Third Best Model
+
+```{r, fig.width=20, fig.height=20}
+# Mod 4
+coefplot::coefplot(mod9)
+```
+
+How do coefficient summaries compare between the 3 models?
+
+- All of the coefficient summaries between the 3 models contain many variables which are not statistically significant yet do contain intervals which are very wide ranging and highly uncertain. Our best model, mod 8, does contain smaller intervals around 0, but are still not entirely significant. I will next utilize `train` in determining those variables which were important and noteworthy enough in the best model, mod8.
+
+Which inputs seem important?
+
+- Let's find out with some quick tests
+
+```{r}
+set.seed(12345)
+my_ctrl <- caret::trainControl(method = "repeatedcv",
+                               number = 5,
+                               repeats = 3,
+                               savePredictions = TRUE)
+my_metric <- "Rsquared"
+```
+
+```{r,warning = FALSE, message = FALSE}
+mod8<- train(log_response ~ 
+              (splines::ns(xa_01, 3) + splines::ns(xa_02, 3) +
+              splines::ns(xa_03, 3) + splines::ns(xa_04, 3) +
+              splines::ns(xa_05, 3) + splines::ns(xa_06, 3) +
+              splines::ns(xa_07, 3) + splines::ns(xa_08, 3) +
+                
+              splines::ns(xb_01, 3) + splines::ns(xb_02, 3) + 
+              splines::ns(xb_03, 3) + splines::ns(xb_04, 3) +
+              splines::ns(xb_05, 3) + splines::ns(xb_06, 3) +
+              splines::ns(xb_07, 3) + splines::ns(xb_08, 3) + 
+                
+              splines::ns(xs_01, 3) + splines::ns(xs_02, 3) +
+              splines::ns(xs_03, 3) + splines::ns(xs_04, 3) +
+              splines::ns(xs_05, 3) + splines::ns(xs_06, 3) +
+                
+              splines::ns(xn_01, 3) + splines::ns(xn_02, 3) +
+              splines::ns(xn_03, 3) + splines::ns(xn_04, 3) +
+              splines::ns(xn_05, 3) + splines::ns(xn_06, 3) +
+              splines::ns(xn_07, 3) + splines::ns(xn_08, 3) +
+                
+              splines::ns(xw_01, 3) + splines::ns(xw_02, 3) +
+              splines::ns(xw_03, 3)) *
+                
+  (customer_A + customer_B + customer_D + customer_E + customer_G +
+  customer_K + customer_M +  customer_Other + customer_Q), 
+                    data = df_all, 
+                    method = "lm", 
+                    metric = my_metric, 
+                    preProcess = c("center" , "scale"),
+                    trControl = my_ctrl,
+                    trace = FALSE)
+```
+
+```{r}
+plot(varImp(mod8), top = 10)
+```
+
+- Those continuous variables which were significantly important in our model are in descending order: xs_02, xs_01, xa_03 and xb_08. These four are repeated multiple times and I will consider these variables to be our most important inputs. 
+
+
+
+###CLASSIFICATION
+
+#Model 1: Categorical Linear Additive
+
+```{r}
+mod1 <- glm( outcome ~ region_XX + region_YY + region_ZZ + customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q, family = "binomial", data = df_all)
+
+
+```
+
+#Model 2: Continuous Linear Additive
+
+```{r}
+
+mod2 <- glm( outcome ~ xa_01 + 
+              xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              
+              xw_01 + xw_02 + xw_03 ,family = "binomial", data = df_all)
+
+
+```
+
+#Model 3: Continuous and Categorical Linear Additive
+
+```{r}
+
+mod3 <- glm( outcome ~ 
+              region_XX + region_YY + region_ZZ + 
+              
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q +
+xa_01 + 
+              xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              
+              xw_01 + xw_02 + xw_03, family = "binomial",data = df_all)
+
+
+```
+
+#Model 4: Categorical vs Continuous Interactions Linear Additive: Region
+
+```{r}
+
+mod4 <- glm( outcome ~ 
+              (xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08) *
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08) * 
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06)*
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08)*
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xw_01 + xw_02 + xw_03)*
+  (region_XX + region_YY + region_ZZ), family = "binomial", data = df_all)
+
+```
+
+#Model 5: Categorical vs Continuous Interactions Linear Additive: Customer
+
+```{r}
+
+mod5 <- glm( outcome ~ 
+              
+              (xa_01 +xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08) *
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q) +
+              
+              (xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08) * 
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q) +
+              
+              (xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06)*
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q) +
+              
+              (xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08)*
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q) +
+              
+              (xw_01 + xw_02 + xw_03)*
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q), family = "binomial",data = df_all)
+
+```
+
+#Model 6: All Pairwise Interaction
+
+```{r}
+
+mod6 <- glm( outcome ~ (xa_01 + 
+              xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              
+              xw_01 + xw_02 + xw_03)^2 , family = "binomial", data = df_all)
+
+
+```
+
+#Model 7: Spline of Continuous
+
+```{r}
+df_a <- 2
+df_b <- 2
+df_s <- 2
+df_n <- 2
+df_w <- 2
+
+mod7 <- glm( outcome ~ 
+              
+              splines::ns(xa_01, df_a) +splines::ns(xa_02, df_a) + splines::ns(xa_03, df_a) + splines::ns(xa_04, df_a) +
+              splines::ns(xa_05, df_a) + splines::ns(xa_06, df_a) + splines::ns(xa_07, df_a) + splines::ns(xa_08, df_a) +
+              
+              splines::ns(xb_01, df_b) + splines::ns(xb_02, df_b) +  splines::ns(xb_03, df_b) + splines::ns(xb_04, df_b) +
+              splines::ns(xb_05, df_b) + splines::ns(xb_06, df_b) +  splines::ns(xb_07, df_b) + splines::ns(xb_08, df_b) + 
+              
+              splines::ns(xs_01, df_s) + splines::ns(xs_02, df_s) + splines::ns(xs_03, df_s) + splines::ns(xs_04, df_s) +
+              splines::ns(xs_05, df_s) + splines::ns(xs_06, df_s) +
+              
+              splines::ns(xn_01, df_n) + splines::ns(xn_02, df_n) + splines::ns(xn_03, df_n) + splines::ns(xn_04, df_n) +
+              splines::ns(xn_05, df_n) + splines::ns(xn_06, df_n) + splines::ns(xn_07, df_n) + splines::ns(xn_08, df_n) +
+              
+              splines::ns(xw_01, df_w) + splines::ns(xw_02, df_w) + splines::ns(xw_03, df_w), family = "binomial", data = df_all)
+
+
+
+```
+
+#Model 8: Spline of Continuous Interact Region
+
+```{r,warning = FALSE, message = FALSE}
+df_a <- 2
+df_b <- 2
+df_s <- 2
+df_n <- 2
+df_w <- 2
+
+mod8 <- glm( outcome ~ 
+              
+              (splines::ns(xa_01, df_a) +splines::ns(xa_02, df_a) + splines::ns(xa_03, df_a) + splines::ns(xa_04, df_a) +
+              splines::ns(xa_05, df_a) + splines::ns(xa_06, df_a) + splines::ns(xa_07, df_a) + splines::ns(xa_08, df_a) +
+              
+              splines::ns(xb_01, df_b) + splines::ns(xb_02, df_b) +  splines::ns(xb_03, df_b) + splines::ns(xb_04, df_b) +
+              splines::ns(xb_05, df_b) + splines::ns(xb_06, df_b) +  splines::ns(xb_07, df_b) + splines::ns(xb_08, df_b) + 
+              
+              splines::ns(xs_01, df_s) + splines::ns(xs_02, df_s) + splines::ns(xs_03, df_s) + splines::ns(xs_04, df_s) +
+              splines::ns(xs_05, df_s) + splines::ns(xs_06, df_s) +
+              
+              splines::ns(xn_01, df_n) + splines::ns(xn_02, df_n) + splines::ns(xn_03, df_n) + splines::ns(xn_04, df_n) +
+              splines::ns(xn_05, df_n) + splines::ns(xn_06, df_n) + splines::ns(xn_07, df_n) + splines::ns(xn_08, df_n) +
+              
+              splines::ns(xw_01, df_w) + splines::ns(xw_02, df_w) + splines::ns(xw_03, df_w)) *
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q),
+    
+    family = "binomial", data = df_all)
+
+
+```
+
+#Model 9: Spline of Continuous Interact Customer
+
+```{r,warning = FALSE, message = FALSE}
+df_a <- 2
+df_b <- 2
+df_s <- 2
+df_n <- 2
+df_w <- 2
+
+mod9 <- glm( outcome ~ 
+              
+              (splines::ns(xa_01, df_a) +splines::ns(xa_02, df_a) + splines::ns(xa_03, df_a) + splines::ns(xa_04, df_a) +
+              splines::ns(xa_05, df_a) + splines::ns(xa_06, df_a) + splines::ns(xa_07, df_a) + splines::ns(xa_08, df_a) +
+              
+              splines::ns(xb_01, df_b) + splines::ns(xb_02, df_b) +  splines::ns(xb_03, df_b) + splines::ns(xb_04, df_b) +
+              splines::ns(xb_05, df_b) + splines::ns(xb_06, df_b) +  splines::ns(xb_07, df_b) + splines::ns(xb_08, df_b) + 
+              
+              splines::ns(xs_01, df_s) + splines::ns(xs_02, df_s) + splines::ns(xs_03, df_s) + splines::ns(xs_04, df_s) +
+              splines::ns(xs_05, df_s) + splines::ns(xs_06, df_s) +
+              
+              splines::ns(xn_01, df_n) + splines::ns(xn_02, df_n) + splines::ns(xn_03, df_n) + splines::ns(xn_04, df_n) +
+              splines::ns(xn_05, df_n) + splines::ns(xn_06, df_n) + splines::ns(xn_07, df_n) + splines::ns(xn_08, df_n) +
+              
+              splines::ns(xw_01, df_w) + splines::ns(xw_02, df_w) + splines::ns(xw_03, df_w)) *
+  (region_XX + region_YY + region_ZZ),
+    
+    family = "binomial", data = df_all)
+
+```
+
+#Model Evaluation
+```{r, eval=TRUE}
+mod_performace<-bind_rows(
+broom::glance(mod1),
+broom::glance(mod2),
+broom::glance(mod3),
+broom::glance(mod4),
+broom::glance(mod5),
+broom::glance(mod6),
+broom::glance(mod7),
+broom::glance(mod8),
+broom::glance(mod9))
+
+mod_performace
+```
+
+##Top 3 Model Coef Plot
+
+#Best Model
+
+```{r, fig.width=30, fig.height=30}
+
+coefplot::coefplot(mod9)
+```
+
+#Second Best Model
+
+```{r, fig.width=30, fig.height=30}
+# Mod 6
+coefplot::coefplot(mod8)
+```
+
+#Third Best Model
+
+```{r, fig.width=20, fig.height=20}
+# Mod 4
+coefplot::coefplot(mod5)
+```

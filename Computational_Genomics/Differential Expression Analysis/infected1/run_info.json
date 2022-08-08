@@ -1,0 +1,13 @@
+{
+	"n_targets": 76503,
+	"n_bootstraps": 0,
+	"n_processed": 20075695,
+	"n_pseudoaligned": 1738890,
+	"n_unique": 693720,
+	"p_pseudoaligned": 8.7,
+	"p_unique": 3.5,
+	"kallisto_version": "0.46.1",
+	"index_version": 10,
+	"start_time": "Tue Mar  1 18:35:04 2022",
+	"call": "kallisto quant -i kallistoindex.idx -o infected1 -l 200 -s 50 --single --rf-stranded /bgfs/biosc1542_2022s/hw6b/SRR11517733.fastq.gz /bgfs/biosc1542_2022s/hw6b/SRR11517734.fastq.gz /bgfs/biosc1542_2022s/hw6b/SRR11517735.fastq.gz /bgfs/biosc1542_2022s/hw6b/SRR11517736.fastq.gz /bgfs/biosc1542_2022s/hw6b/SRR11517737.fastq.gz /bgfs/biosc1542_2022s/hw6b/SRR11517738.fastq.gz /bgfs/biosc1542_2022s/hw6b/SRR11517739.fastq.gz /bgfs/biosc1542_2022s/hw6b/SRR11517740.fastq.gz"
+}

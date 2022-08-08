@@ -1,0 +1,13 @@
+{
+	"n_targets": 76503,
+	"n_bootstraps": 0,
+	"n_processed": 14284134,
+	"n_pseudoaligned": 11964484,
+	"n_unique": 3365430,
+	"p_pseudoaligned": 83.8,
+	"p_unique": 23.6,
+	"kallisto_version": "0.46.1",
+	"index_version": 10,
+	"start_time": "Tue Mar  1 18:28:48 2022",
+	"call": "kallisto quant -i kallistoindex.idx -o uninfected1 -l 200 -s 50 --single --rf-stranded /bgfs/biosc1542_2022s/hw6b/SRR11517725.fastq.gz"
+}

@@ -1,0 +1,391 @@
+---
+title: "Part C: Regression and Classification"
+author: "Binghan Zheng"
+date: "3/29/2022"
+output: html_document
+---
+
+# SetUp
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Libraries
+
+```{r}
+library(tidyverse)
+library(caret)
+library(fastDummies)
+```
+
+#Preparing the Data
+
+```{r}
+
+df_all <- readr::read_csv("final_project_train.csv", col_names = TRUE)
+
+df_all <- dummy_cols(df_all, select_columns = 'region')
+df_all <- dummy_cols(df_all, select_columns = 'customer')
+df_all$log_response <- log(df_all$response)
+df_all
+```
+
+
+##MODEL PREDICTIONS
+
+```{r}
+tidy_predict <- function(mod, xnew)
+{
+  pred_df <- predict(mod, xnew, interval = "confidence") %>% 
+    as.data.frame() %>% tibble::as_tibble() %>% 
+    dplyr::select(pred = fit, ci_lwr = lwr, ci_upr = upr) %>% 
+    bind_cols(predict(mod, xnew, interval = 'prediction') %>% 
+                as.data.frame() %>% tibble::as_tibble() %>% 
+                dplyr::select(pred_lwr = lwr, pred_upr = upr))
+  
+  xnew %>% bind_cols(pred_df)
+}
+```
+
+
+```{r, eval=TRUE}
+#For Model 6
+viz_grid_6 <- expand.grid(xa_01 = median(df_all$xa_01),
+                        xa_02 = median(df_all$xa_02),
+                        xa_03 = median(df_all$xa_03),
+                        xa_04 = median(df_all$xa_04),
+                        xa_05 = median(df_all$xa_05),
+                        xa_06 = median(df_all$xa_06),
+                        xa_07 = median(df_all$xa_07),
+                        xa_08 = median(df_all$xa_08),
+                        xb_01 = median(df_all$xb_01),
+                        xb_02 = median(df_all$xb_02),
+                        xb_03 = median(df_all$xb_03),
+                        xb_04 = median(df_all$xb_04),
+                        xb_05 = seq(from = min(df_all$xb_05),
+                                    to = max(df_all$xb_05),
+                                    length.out = 6),
+                        xb_06 = median(df_all$xb_06),
+                        xb_07 = median(df_all$xb_07),
+                        xb_08 = seq(from = min(df_all$xb_08),
+                                    to = max(df_all$xb_08),
+                                    length.out = 101),
+                        xn_01 = median(df_all$xn_01),
+                        xn_02 = median(df_all$xn_02),
+                        xn_03 = median(df_all$xn_03),
+                        xn_04 = median(df_all$xn_04),
+                        xn_05 = median(df_all$xn_05),
+                        xn_06 = median(df_all$xn_06),
+                        xn_07 = median(df_all$xn_07),
+                        xn_08 = median(df_all$xn_08),
+                        xs_01 = median(df_all$xs_01),
+                        xs_02 = median(df_all$xs_02),
+                        xs_03 = median(df_all$xs_03),
+                        xs_04 = median(df_all$xs_04),
+                        xs_05 = median(df_all$xs_05),
+                        xs_06 = median(df_all$xs_06),
+                        xw_01 = median(df_all$xw_01),
+                        xw_02 = median(df_all$xw_02),
+                        xw_03 = median(df_all$xw_03),
+                        KEEP.OUT.ATTRS = FALSE,
+                        stringsAsFactors = FALSE) %>% 
+  as.data.frame() %>% tibble::as_tibble()
+
+viz_grid_8 <- expand.grid(customer_A = median(df_all$customer_A),
+                          customer_B = median(df_all$customer_B),
+                          customer_D = median(df_all$customer_D),
+                          customer_E = median(df_all$customer_E),
+                          customer_G = median(df_all$customer_G),
+                          customer_K = median(df_all$customer_K),
+                          customer_M = median(df_all$customer_M),
+                          customer_Other = median(df_all$customer_Other),
+                          customer_Q = median(df_all$customer_Q),
+                          xa_01 = median(df_all$xa_01),
+                        xa_02 = median(df_all$xa_02),
+                        xa_03 = median(df_all$xa_03),
+                        xa_04 = median(df_all$xa_04),
+                        xa_05 = median(df_all$xa_05),
+                        xa_06 = median(df_all$xa_06),
+                        xa_07 = median(df_all$xa_07),
+                        xa_08 = median(df_all$xa_08),
+                        xb_01 = median(df_all$xb_01),
+                        xb_02 = median(df_all$xb_02),
+                        xb_03 = median(df_all$xb_03),
+                        xb_04 = median(df_all$xb_04),
+                        xb_05 = seq(from = min(df_all$xb_05),
+                                    to = max(df_all$xb_05),
+                                    length.out = 6),
+                        xb_06 = median(df_all$xb_06),
+                        xb_07 = median(df_all$xb_07),
+                        xb_08 = seq(from = min(df_all$xb_08),
+                                    to = max(df_all$xb_08),
+                                    length.out = 101),
+                        xn_01 = median(df_all$xn_01),
+                        xn_02 = median(df_all$xn_02),
+                        xn_03 = median(df_all$xn_03),
+                        xn_04 = median(df_all$xn_04),
+                        xn_05 = median(df_all$xn_05),
+                        xn_06 = median(df_all$xn_06),
+                        xn_07 = median(df_all$xn_07),
+                        xn_08 = median(df_all$xn_08),
+                        xs_01 = median(df_all$xs_01),
+                        xs_02 = median(df_all$xs_02),
+                        xs_03 = median(df_all$xs_03),
+                        xs_04 = median(df_all$xs_04),
+                        xs_05 = median(df_all$xs_05),
+                        xs_06 = median(df_all$xs_06),
+                        xw_01 = median(df_all$xw_01),
+                        xw_02 = median(df_all$xw_02),
+                        xw_03 = median(df_all$xw_03),
+                        KEEP.OUT.ATTRS = FALSE,
+                        stringsAsFactors = FALSE) %>% 
+  as.data.frame() %>% tibble::as_tibble()
+```
+
+
+#Bayseian Model A Design Matrix - Model 6
+
+```{r}
+
+XmatA<- lm(log_response ~ (xa_01 + 
+              xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03)^2 , data = df_all)
+```
+
+#Bayesian Model B Design Matrix - Model 8
+
+```{r}
+XmatB <- lm( log_response ~ 
+             (splines::ns(xa_01, 2) + splines::ns(xa_02, 2) +
+              splines::ns(xa_03, 2) + splines::ns(xa_04, 2) +
+              splines::ns(xa_05, 2) + splines::ns(xa_06, 2) +
+              splines::ns(xa_07, 2) + splines::ns(xa_08, 2) +
+                
+              splines::ns(xb_01, 2) + splines::ns(xb_02, 2) + 
+              splines::ns(xb_03, 2) + splines::ns(xb_04, 2) +
+              splines::ns(xb_05, 2) + splines::ns(xb_06, 2) +
+              splines::ns(xb_07, 2) + splines::ns(xb_08, 2) + 
+                
+              splines::ns(xs_01, 2) + splines::ns(xs_02, 2) +
+              splines::ns(xs_03, 2) + splines::ns(xs_04, 2) +
+              splines::ns(xs_05, 2) + splines::ns(xs_06, 2) +
+                
+              splines::ns(xn_01, 2) + splines::ns(xn_02, 2) +
+              splines::ns(xn_03, 2) + splines::ns(xn_04, 2) +
+              splines::ns(xn_05, 2) + splines::ns(xn_06, 2) +
+              splines::ns(xn_07, 2) + splines::ns(xn_08, 2) +
+                
+              splines::ns(xw_01, 2) + splines::ns(xw_02, 2) +
+              splines::ns(xw_03, 2)) *
+                
+  (customer_A + customer_B + customer_D + customer_E + customer_G +
+  customer_K + customer_M +  customer_Other + customer_Q),
+    
+    data = df_all)
+```
+
+
+```{r}
+predict_mod_06 <- tidy_predict(XmatA, viz_grid_6)
+
+predict_mod_08 <- tidy_predict(XmatB, viz_grid_8)
+
+predict_mod_06 %>% 
+  ggplot(mapping = aes(x = xb_08)) +
+  geom_ribbon(mapping = aes(ymin = pred_lwr, ymax = pred_upr),
+              fill = 'orange') +
+  geom_ribbon(mapping = aes(ymin = ci_lwr, ymax = ci_upr),
+              fill = 'grey') +
+  geom_line(mapping = aes(y = pred),
+            color = 'black') +
+  coord_cartesian(ylim = c(-30, 30)) +
+  facet_wrap(~xb_05, labeller = "label_both") +
+  theme_bw()
+
+predict_mod_08 %>% 
+  ggplot(mapping = aes(x = xb_08)) +
+  geom_ribbon(mapping = aes(ymin = pred_lwr, ymax = pred_upr),
+              fill = 'orange') +
+  geom_ribbon(mapping = aes(ymin = ci_lwr, ymax = ci_upr),
+              fill = 'grey') +
+  geom_line(mapping = aes(y = pred),
+            color = 'black') +
+  coord_cartesian(ylim = c(-40,40)) +
+  facet_wrap(~xb_05, labeller = "label_both") +
+  theme_bw()
+```
+
+The predictive trends between the two selected linear models are not the same. XmatA(first graph) has a predictive mean trend which is negative for negative values of `xb_05` and a neurtral slope for the `xb_05` value which is close to 0. For positive values of `xb_05`, the slope of the predictive trend is positive and increases sharply as the value of `xb_05` increases. 
+
+The predictive trend for XmatB(second graph) has positive slopes for its trend lines regardless of the value of `xb_05` and regardless of the value of `xb_08`. 
+
+Both of these two graphs have very wide confidence intervals but prediction intervals which are tightly bound to the edges of the confidence interval. 
+Are the predictive trends consistent between the two models?
+
+
+###CLASSIFICATION
+
+#Predictive Function
+
+```{r}
+my_ctrl <- trainControl(method = 'repeatedcv',
+                        number = 10, 
+                        repeats = 3,
+                        summaryFunction = twoClassSummary,
+                        classProbs = TRUE, 
+                        savePredictions = TRUE)
+
+ROC <- "ROC"
+
+Accuracy <- "Accuracy"
+
+```
+
+
+#Prediction: Model A (5)
+
+```{r, warning = FALSE, message = FALSE}
+
+mod_a_roc <- train(outcome ~ 
+              ((xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08) *
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08) * 
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06)*
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08)*
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xw_01 + xw_02 + xw_03)* (region_XX + region_YY + region_ZZ)),
+             data = df_all,
+                   method = "glm",
+                   metric = ROC,
+                   preProcess = c("center", "scale"),
+                   trControl = my_ctrl)
+
+mod_a_acc <- train(outcome ~ 
+              (xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08) *
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08) * 
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06)*
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08)*
+  (region_XX + region_YY + region_ZZ) +
+              
+              (xw_01 + xw_02 + xw_03)*
+  (region_XX + region_YY + region_ZZ),
+             data = df_all,
+                   method = "glm",
+                   metric = Accuracy,
+                   preProcess = c("center", "scale"),
+                   trControl = my_ctrl)
+```
+
+#Prediction: Model B (9)
+
+```{r, warning= FALSE, message= FALSE}
+
+
+mod_b_roc <- train(outcome ~ 
+              
+              splines::ns(xa_01, 2) + splines::ns(xa_02, 2) + splines::ns(xa_03, 2) + splines::ns(xa_04, 2) +
+              splines::ns(xa_05, 2) + splines::ns(xa_06, 2) + splines::ns(xa_07, 2) + splines::ns(xa_08, 2) +
+              
+              splines::ns(xb_01, 2) + splines::ns(xb_02, 2) + splines::ns(xb_03, 2) + splines::ns(xb_04, 2) +
+              splines::ns(xb_05, 2) + splines::ns(xb_06, 2) + splines::ns(xb_07, 2) + splines::ns(xb_08, 2) + 
+              
+              splines::ns(xs_01, 2) + splines::ns(xs_02, 2) + splines::ns(xs_03, 2) + splines::ns(xs_04, 2) +
+              splines::ns(xs_05, 2) + splines::ns(xs_06, 2) +
+              
+              splines::ns(xn_01, 2) + splines::ns(xn_02, 2) + splines::ns(xn_03, 2) + splines::ns(xn_04, 2) +
+              splines::ns(xn_05, 2) + splines::ns(xn_06, 2) + splines::ns(xn_07, 2) + splines::ns(xn_08, 2) +
+              
+              splines::ns(xw_01, 2) + splines::ns(xw_02, 2) + splines::ns(xw_03, 2),
+           
+             data = df_all,
+                   method = "glm",
+                   metric = ROC,
+                   preProcess = c("center", "scale"),
+                   trControl = my_ctrl)
+
+mod_b_acc <- train(outcome ~ 
+              
+              splines::ns(xa_01, 2) + splines::ns(xa_02, 2) + splines::ns(xa_03, 2) + splines::ns(xa_04, 2) +
+              splines::ns(xa_05, 2) + splines::ns(xa_06, 2) + splines::ns(xa_07, 2) + splines::ns(xa_08, 2) +
+              
+              splines::ns(xb_01, 2) + splines::ns(xb_02, 2) + splines::ns(xb_03, 2) + splines::ns(xb_04, 2) +
+              splines::ns(xb_05, 2) + splines::ns(xb_06, 2) + splines::ns(xb_07, 2) + splines::ns(xb_08, 2) + 
+              
+              splines::ns(xs_01, 2) + splines::ns(xs_02, 2) + splines::ns(xs_03, 2) + splines::ns(xs_04, 2) +
+              splines::ns(xs_05, 2) + splines::ns(xs_06, 2) +
+              
+              splines::ns(xn_01, 2) + splines::ns(xn_02, 2) + splines::ns(xn_03, 2) + splines::ns(xn_04, 2) +
+              splines::ns(xn_05, 2) + splines::ns(xn_06, 2) + splines::ns(xn_07, 2) + splines::ns(xn_08, 2) +
+              
+              splines::ns(xw_01, 2) + splines::ns(xw_02, 2) + splines::ns(xw_03, 2),
+           
+             data = df_all,
+                   method = "glm",
+                   metric = Accuracy,
+                   preProcess = c("center", "scale"),
+                   trControl = my_ctrl)
+```
+
+#Visualization: Model A
+
+```{r}
+#must include mean event probability, confidence interval
+roc_results <- resamples(list(mod_a = mod_a_roc,
+                              mod_b = mod_b_roc))
+dotplot(roc_results, metric="ROC")
+dotplot(roc_results)
+
+acc_results <- resamples(list(mod_a = mod_a_acc,
+                              mod_b = mod_b_acc))
+#dotplot(acc_results, metric="Accuracy")
+#dotplot(acc_results)
+
+mod_a_roc$pred %>% tibble::as_tibble()
+mod_a_roc$pred %>% yardstick::roc_curve(obs, event)
+mod_a_roc$pred %>% yardstick::roc_curve(obs, event) %>% autoplot()
+```
+
+#Visualization: Model B
+
+```{r}
+
+mod_b_roc$pred %>% tibble::as_tibble()
+mod_b_roc$pred %>% yardstick::roc_curve(obs, event)
+mod_b_roc$pred %>% yardstick::roc_curve(obs, event) %>% autoplot()
+
+```
+```{r}
+prob <- predict(mod_a_roc, df_all, type = "prob")$event
+
+ggplot(mapping = aes(x = seq(0, 50, length.out = length(prob)), y = prob)) +
+  geom_point() +
+  geom_smooth() +
+  ylab("Model 5: Probability")
+
+prob <- predict(mod_b_roc, df_all, type = "prob")$event
+
+ggplot(mapping = aes(x = seq(0, 50, length.out = length(prob)), y = prob)) +
+  geom_point() +
+  geom_smooth() +
+  ylab("Model 8: Probability")
+```
+
+Are the predictive trends consistent between the two models?
+
+Yes, they are consistent

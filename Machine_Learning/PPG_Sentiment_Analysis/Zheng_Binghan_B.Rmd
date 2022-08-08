@@ -1,0 +1,540 @@
+---
+title: "Part B: Regression and Classification"
+author: "Binghan Zheng"
+date: "3/29/2022"
+output: html_document
+---
+# SetUp
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Libraries
+
+```{r}
+library(tidyverse)
+library(fastDummies)
+library(bayestestR)
+```
+
+#Preparing the Data
+
+```{r}
+df_all <- readr::read_csv("final_project_train.csv", col_names = TRUE)
+df_all <- dummy_cols(df_all, select_columns = 'region')
+df_all <- dummy_cols(df_all, select_columns = 'customer')
+df_all$log_response <- log(df_all$response)
+df_all<-df_all %>% 
+  mutate(outcome = ifelse(outcome == 'event', 1,0))
+```
+
+#Posterior Coefficients
+
+```{r}
+viz_post_coefs <- function(post_means, post_sds, xnames)
+{
+  tibble::tibble(
+    mu = post_means,
+    sd = post_sds,
+    x = xnames
+  ) %>% 
+    mutate(x = factor(x, levels = xnames)) %>% 
+    ggplot(mapping = aes(x = x)) +
+    geom_hline(yintercept = 0, color = 'grey', linetype = 'dashed') +
+    geom_point(mapping = aes(y = mu)) +
+    geom_linerange(mapping = aes(ymin = mu - 2 * sd,
+                                 ymax = mu + 2 * sd,
+                                 group = x)) +
+    labs(x = 'feature', y = 'coefficient value') +
+    coord_flip() +
+    theme_bw()
+}
+```
+
+#Posterior
+
+```{r}
+lm_logpost <- function(unknowns, my_info)
+{
+  # specify the number of unknown beta parameters
+  length_beta <- ncol(my_info$design_matrix)
+  
+  # extract the beta parameters from the `unknowns` vector
+  beta_v <- unknowns[1:length_beta]
+  
+  # extract the unbounded noise parameter, varphi
+  lik_varphi <- unknowns[length_beta + 1]
+  
+  # back-transform from varphi to sigma
+  lik_sigma <- exp(lik_varphi)
+  
+  # extract design matrix
+  X <- (my_info$design_matrix)
+  
+  # calculate the linear predictor
+  mu <- as.vector(X %*% as.matrix(beta_v))
+  
+  # evaluate the log-likelihood
+  log_lik <- sum(dnorm(x = my_info$yobs,
+                       mean = mu,
+                       sd = lik_sigma,
+                       log = TRUE))
+  
+  # evaluate the log-prior
+  log_prior_beta <- sum(dnorm(x = beta_v,
+                              mean = my_info$mu_beta,
+                              sd = my_info$tau_beta,
+                              log = TRUE))
+  
+  log_prior_sigma <- dexp(x = lik_sigma,
+                          rate = my_info$sigma_rate,
+                          log = TRUE)
+  
+  # add the mean trend prior and noise prior together
+  log_prior <- log_prior_beta + log_prior_sigma
+  
+  # account for the transformation
+  log_derive_adjust <-lik_varphi 
+  
+  # sum together
+  log_lik + log_prior + log_derive_adjust
+}
+```
+
+#Laplace
+
+```{r}
+
+my_laplace <- function(start_guess, logpost_func, ...)
+{
+  # code adapted from the `LearnBayes`` function `laplace()`
+  fit <- optim(start_guess,
+               logpost_func,
+               gr = NULL,
+               ...,
+               method = "BFGS",
+               hessian = TRUE,
+               control = list(fnscale = -1, maxit = 1001))
+  
+  mode <- fit$par
+  post_var_matrix <- -solve(fit$hessian)
+  p <- length(mode)
+  int <- p/2 * log(2 * pi) + 0.5 * log(det(post_var_matrix)) + logpost_func(mode, ...)
+  # package all of the results into a list
+  list(mode = mode,
+       var_matrix = post_var_matrix,
+       log_evidence = int,
+       converge = ifelse(fit$convergence == 0,
+                         "YES", 
+                         "NO"),
+       iter_counts = as.numeric(fit$counts[1]))
+}
+```
+
+#Bayesian Model A: Model 6
+
+```{r,eval =TRUE}
+mod6 <- model.matrix( log_response ~ (xa_01 + 
+              xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03)^2 , data = df_all)
+
+```
+
+#Bayseian Model B: Model 8
+
+```{r}
+df_a <- 2
+df_b <- 2
+df_s <- 2
+df_n <- 2
+df_w <- 2
+
+mod8 <- model.matrix( log_response ~ 
+              (splines::ns(xa_01, df_a) + splines::ns(xa_02, df_a) +
+              splines::ns(xa_03, df_a) + splines::ns(xa_04, df_a) +
+              splines::ns(xa_05, df_a) + splines::ns(xa_06, df_a) +
+              splines::ns(xa_07, df_a) + splines::ns(xa_08, df_a) +
+                
+              splines::ns(xb_01, df_b) + splines::ns(xb_02, df_b) + 
+              splines::ns(xb_03, df_b) + splines::ns(xb_04, df_b) +
+              splines::ns(xb_05, df_b) + splines::ns(xb_06, df_b) +
+              splines::ns(xb_07, df_b) + splines::ns(xb_08, df_b) + 
+                
+              splines::ns(xs_01, df_s) + splines::ns(xs_02, df_s) +
+              splines::ns(xs_03, df_s) + splines::ns(xs_04, df_s) +
+              splines::ns(xs_05, df_s) + splines::ns(xs_06, df_s) +
+                
+              splines::ns(xn_01, df_n) + splines::ns(xn_02, df_n) +
+              splines::ns(xn_03, df_n) + splines::ns(xn_04, df_n) +
+              splines::ns(xn_05, df_n) + splines::ns(xn_06, df_n) +
+              splines::ns(xn_07, df_n) + splines::ns(xn_08, df_n) +
+                
+              splines::ns(xw_01, df_w) + splines::ns(xw_02, df_w) +
+              splines::ns(xw_03, df_w)) *
+                
+  (customer_A + customer_B + customer_D + customer_E + customer_G +
+  customer_K + customer_M +  customer_Other + customer_Q),
+    data = df_all)
+
+
+```
+
+#Laplace Approximation
+
+```{r}
+info_08 <- list(
+  yobs = df_all$response,
+  design_matrix = mod8,
+  mu_beta = 0,
+  tau_beta = 50,
+  sigma_rate = 1
+)
+
+laplace_08 <- my_laplace(seq(0,0, length.out = ncol(mod8)+1), lm_logpost, info_08)
+```
+
+```{r}
+info_06 <- list(
+  yobs = df_all$response,
+  design_matrix = mod6,
+  mu_beta = 0,
+  tau_beta = 50,
+  sigma_rate = 1
+)
+laplace_06 <- my_laplace(seq(0,0, length.out = ncol(mod6)+1), lm_logpost, info_06)
+```
+
+Why did we choose the 2nd model?
+
+- Model 6 from iiA) was the 2nd best performing model according to r-squared ranking. I wanted to not only use a model fit splines(mod8), but also a model which was not to see if the model could be effectively fit without splines.
+
+#Model Evaluation - Performance Metric in selecting our best model (Bayes Factor)
+
+```{r, eval = TRUE}
+evidence_sixth <- exp(laplace_06$log_evidence)
+evidence_eigth <- exp(laplace_08$log_evidence)
+bayes_factor <- evidence_eigth/evidence_sixth
+bayes_factor
+```
+
+
+```{r, fig.width=20, fig.height=20}
+#Visualize the posterior coefficient summary.
+viz_post_coefs(post_means = laplace_08$mode[1:length(laplace_08$mode)-1],
+          post_sds = sqrt(diag(laplace_08$var_matrix))[1:ncol(laplace_08$var_matrix)-1],
+               xnames = colnames(mod8))
+```
+
+
+How does the lm() MLE on sigma compare to posterior uncertainty in sigma? Is it precise?
+
+- Answer
+
+##MODEL PREDICTIONS
+
+```{r}
+tidy_predict <- function(mod, xnew)
+{
+  pred_df <- predict(mod, xnew, interval = "confidence") %>% 
+    as.data.frame() %>% tibble::as_tibble() %>% 
+    dplyr::select(pred = fit, ci_lwr = lwr, ci_upr = upr) %>% 
+    bind_cols(predict(mod, xnew, interval = 'prediction') %>% 
+                as.data.frame() %>% tibble::as_tibble() %>% 
+                dplyr::select(pred_lwr = lwr, pred_upr = upr))
+  
+  xnew %>% bind_cols(pred_df)
+}
+```
+
+
+```{r, eval=TRUE}
+#For Model 6
+viz_grid_6 <- expand.grid(xa_01 = median(df_all$xa_01),
+                        xa_02 = median(df_all$xa_02),
+                        xa_03 = median(df_all$xa_03),
+                        xa_04 = median(df_all$xa_04),
+                        xa_05 = median(df_all$xa_05),
+                        xa_06 = median(df_all$xa_06),
+                        xa_07 = median(df_all$xa_07),
+                        xa_08 = median(df_all$xa_08),
+                        xb_01 = median(df_all$xb_01),
+                        xb_02 = median(df_all$xb_02),
+                        xb_03 = median(df_all$xb_03),
+                        xb_04 = median(df_all$xb_04),
+                        xb_05 = seq(from = min(df_all$xb_05),
+                                    to = max(df_all$xb_05),
+                                    length.out = 6),
+                        xb_06 = median(df_all$xb_06),
+                        xb_07 = median(df_all$xb_07),
+                        xb_08 = seq(from = min(df_all$xb_08),
+                                    to = max(df_all$xb_08),
+                                    length.out = 101),
+                        xn_01 = median(df_all$xn_01),
+                        xn_02 = median(df_all$xn_02),
+                        xn_03 = median(df_all$xn_03),
+                        xn_04 = median(df_all$xn_04),
+                        xn_05 = median(df_all$xn_05),
+                        xn_06 = median(df_all$xn_06),
+                        xn_07 = median(df_all$xn_07),
+                        xn_08 = median(df_all$xn_08),
+                        xs_01 = median(df_all$xs_01),
+                        xs_02 = median(df_all$xs_02),
+                        xs_03 = median(df_all$xs_03),
+                        xs_04 = median(df_all$xs_04),
+                        xs_05 = median(df_all$xs_05),
+                        xs_06 = median(df_all$xs_06),
+                        xw_01 = median(df_all$xw_01),
+                        xw_02 = median(df_all$xw_02),
+                        xw_03 = median(df_all$xw_03),
+                        KEEP.OUT.ATTRS = FALSE,
+                        stringsAsFactors = FALSE) %>% 
+  as.data.frame() %>% tibble::as_tibble()
+
+viz_grid_8 <- expand.grid(customer_A = median(df_all$customer_A),
+                          customer_B = median(df_all$customer_B),
+                          customer_D = median(df_all$customer_D),
+                          customer_E = median(df_all$customer_E),
+                          customer_G = median(df_all$customer_G),
+                          customer_K = median(df_all$customer_K),
+                          customer_M = median(df_all$customer_M),
+                          customer_Other = median(df_all$customer_Other),
+                          customer_Q = median(df_all$customer_Q),
+                          xa_01 = median(df_all$xa_01),
+                        xa_02 = median(df_all$xa_02),
+                        xa_03 = median(df_all$xa_03),
+                        xa_04 = median(df_all$xa_04),
+                        xa_05 = median(df_all$xa_05),
+                        xa_06 = median(df_all$xa_06),
+                        xa_07 = median(df_all$xa_07),
+                        xa_08 = median(df_all$xa_08),
+                        xb_01 = median(df_all$xb_01),
+                        xb_02 = median(df_all$xb_02),
+                        xb_03 = median(df_all$xb_03),
+                        xb_04 = median(df_all$xb_04),
+                        xb_05 = seq(from = min(df_all$xb_05),
+                                    to = max(df_all$xb_05),
+                                    length.out = 6),
+                        xb_06 = median(df_all$xb_06),
+                        xb_07 = median(df_all$xb_07),
+                        xb_08 = seq(from = min(df_all$xb_08),
+                                    to = max(df_all$xb_08),
+                                    length.out = 101),
+                        xn_01 = median(df_all$xn_01),
+                        xn_02 = median(df_all$xn_02),
+                        xn_03 = median(df_all$xn_03),
+                        xn_04 = median(df_all$xn_04),
+                        xn_05 = median(df_all$xn_05),
+                        xn_06 = median(df_all$xn_06),
+                        xn_07 = median(df_all$xn_07),
+                        xn_08 = median(df_all$xn_08),
+                        xs_01 = median(df_all$xs_01),
+                        xs_02 = median(df_all$xs_02),
+                        xs_03 = median(df_all$xs_03),
+                        xs_04 = median(df_all$xs_04),
+                        xs_05 = median(df_all$xs_05),
+                        xs_06 = median(df_all$xs_06),
+                        xw_01 = median(df_all$xw_01),
+                        xw_02 = median(df_all$xw_02),
+                        xw_03 = median(df_all$xw_03),
+                        KEEP.OUT.ATTRS = FALSE,
+                        stringsAsFactors = FALSE) %>% 
+  as.data.frame() %>% tibble::as_tibble()
+```
+
+
+#Bayseian Model A Design Matrix - Model 6
+
+```{r}
+
+XmatA<- lm(log_response ~ (xa_01 + 
+              xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03)^2 , data = df_all)
+```
+
+#Bayesian Model B Design Matrix - Model 8
+
+```{r}
+XmatB <- lm( log_response ~ 
+             (splines::ns(xa_01, 2) + splines::ns(xa_02, 2) +
+              splines::ns(xa_03, 2) + splines::ns(xa_04, 2) +
+              splines::ns(xa_05, 2) + splines::ns(xa_06, 2) +
+              splines::ns(xa_07, 2) + splines::ns(xa_08, 2) +
+                
+              splines::ns(xb_01, 2) + splines::ns(xb_02, 2) + 
+              splines::ns(xb_03, 2) + splines::ns(xb_04, 2) +
+              splines::ns(xb_05, 2) + splines::ns(xb_06, 2) +
+              splines::ns(xb_07, 2) + splines::ns(xb_08, 2) + 
+                
+              splines::ns(xs_01, 2) + splines::ns(xs_02, 2) +
+              splines::ns(xs_03, 2) + splines::ns(xs_04, 2) +
+              splines::ns(xs_05, 2) + splines::ns(xs_06, 2) +
+                
+              splines::ns(xn_01, 2) + splines::ns(xn_02, 2) +
+              splines::ns(xn_03, 2) + splines::ns(xn_04, 2) +
+              splines::ns(xn_05, 2) + splines::ns(xn_06, 2) +
+              splines::ns(xn_07, 2) + splines::ns(xn_08, 2) +
+                
+              splines::ns(xw_01, 2) + splines::ns(xw_02, 2) +
+              splines::ns(xw_03, 2)) *
+                
+  (customer_A + customer_B + customer_D + customer_E + customer_G +
+  customer_K + customer_M +  customer_Other + customer_Q),
+    
+    data = df_all)
+```
+
+
+```{r}
+predict_mod_06 <- tidy_predict(XmatA, viz_grid_6)
+
+predict_mod_08 <- tidy_predict(XmatB, viz_grid_8)
+
+predict_mod_06 %>% 
+  ggplot(mapping = aes(x = xb_08)) +
+  geom_ribbon(mapping = aes(ymin = pred_lwr, ymax = pred_upr),
+              fill = 'orange') +
+  geom_ribbon(mapping = aes(ymin = ci_lwr, ymax = ci_upr),
+              fill = 'grey') +
+  geom_line(mapping = aes(y = pred),
+            color = 'black') +
+  coord_cartesian(ylim = c(-30, 30)) +
+  facet_wrap(~xb_05, labeller = "label_both") +
+  theme_bw()
+
+predict_mod_08 %>% 
+  ggplot(mapping = aes(x = xb_08)) +
+  geom_ribbon(mapping = aes(ymin = pred_lwr, ymax = pred_upr),
+              fill = 'orange') +
+  geom_ribbon(mapping = aes(ymin = ci_lwr, ymax = ci_upr),
+              fill = 'grey') +
+  geom_line(mapping = aes(y = pred),
+            color = 'black') +
+  coord_cartesian(ylim = c(-40,40)) +
+  facet_wrap(~xb_05, labeller = "label_both") +
+  theme_bw()
+```
+
+###CLASSIFICATION
+
+#Bayseian 
+
+#Bayseian Model A:
+
+```{r}
+mod5_bayes <- model.matrix( outcome ~ 
+              
+              (xa_01 +xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08) *
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q) +
+              
+              (xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08) * 
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q) +
+              
+              (xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06)*
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q) +
+              
+              (xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08)*
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q) +
+              
+              (xw_01 + xw_02 + xw_03)*
+  (customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q), data = df_all)
+
+```
+
+
+#Bayesian Model B:
+
+```{r}
+mod9_bayes <- model.matrix(  outcome ~ 
+              
+              (splines::ns(xa_01, df_a) +splines::ns(xa_02, df_a) + splines::ns(xa_03, df_a) + splines::ns(xa_04, df_a) +
+              splines::ns(xa_05, df_a) + splines::ns(xa_06, df_a) + splines::ns(xa_07, df_a) + splines::ns(xa_08, df_a) +
+              
+              splines::ns(xb_01, df_b) + splines::ns(xb_02, df_b) +  splines::ns(xb_03, df_b) + splines::ns(xb_04, df_b) +
+              splines::ns(xb_05, df_b) + splines::ns(xb_06, df_b) +  splines::ns(xb_07, df_b) + splines::ns(xb_08, df_b) + 
+              
+              splines::ns(xs_01, df_s) + splines::ns(xs_02, df_s) + splines::ns(xs_03, df_s) + splines::ns(xs_04, df_s) +
+              splines::ns(xs_05, df_s) + splines::ns(xs_06, df_s) +
+              
+              splines::ns(xn_01, df_n) + splines::ns(xn_02, df_n) + splines::ns(xn_03, df_n) + splines::ns(xn_04, df_n) +
+              splines::ns(xn_05, df_n) + splines::ns(xn_06, df_n) + splines::ns(xn_07, df_n) + splines::ns(xn_08, df_n) +
+              
+              splines::ns(xw_01, df_w) + splines::ns(xw_02, df_w) + splines::ns(xw_03, df_w)) *
+  (region_XX + region_YY + region_ZZ),
+           
+             data = df_all)
+```
+
+### Model Information
+
+```{r}
+info_fifth <- list(
+  yobs = df_all$outcome,
+  design_matrix = mod5_bayes,
+  mu_beta = 0,
+  tau_beta = 50
+)
+
+info_nineth <- list(
+  yobs = df_all$outcome,
+  design_matrix = mod9_bayes,
+  mu_beta = 0,
+  tau_beta = 50
+)
+```
+
+#Model Evaluation
+
+```{r}
+laplace_fifth <- my_laplace(seq(0,0, length.out = ncol(mod5_bayes)), logistic_logpost, info_fifth)
+
+laplace_nineth <- my_laplace(seq(0,0, length.out = ncol(mod9_bayes)), logistic_logpost, info_nineth)
+```
+
+
+#Visualize Regression Coefficient of Best Model
+
+```{r, make_coef_viz_function}
+viz_post_coefs <- function(post_means, post_sds, xnames)
+{
+  tibble::tibble(
+    mu = post_means,
+    sd = post_sds,
+    x = xnames
+  ) %>% 
+    mutate(x = factor(x, levels = xnames)) %>% 
+    ggplot(mapping = aes(x = x)) +
+    geom_hline(yintercept = 0, color = 'grey', linetype = 'dashed') +
+    geom_point(mapping = aes(y = mu)) +
+    geom_linerange(mapping = aes(ymin = mu - 2 * sd,
+                                 ymax = mu + 2 * sd,
+                                 group = x)) +
+    labs(x = 'feature', y = 'coefficient value') +
+    coord_flip() +
+    theme_bw()
+}
+```
+
+
+#Model Evaluation - Performance Metric in selecting our best model (Bayes Factor)
+
+```{r}
+evidence_fifth <- exp(laplace_fifth$log_evidence)
+evidence_nineth <- exp(laplace_nineth$log_evidence)
+bayes_factor <- evidence_nineth/evidence_fifth
+bayes_factor
+```
+
+
+```{r, fig.width=20, fig.height=20}
+#Visualize the posterior coefficient summary.
+viz_post_coefs(post_means = laplace_nineth$mode[1:length(laplace_nineth$mode)],
+          post_sds = sqrt(diag(laplace_nineth$var_matrix))[1:ncol(laplace_nineth$var_matrix)],
+               xnames = colnames(mod9_bayes))
+```

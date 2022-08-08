@@ -1,0 +1,204 @@
+---
+title: "Differential Expression Analysis"
+output: "html"
+author: "Binghan Zheng"
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r imports}
+library(tidyverse)
+library(DESeq2)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r load tables}
+uninfected1_abundance <- read.table("uninfected1/abundance.tsv")
+uninfected1_abundance
+
+uninfected2_abundance <- read.table("uninfected2/abundance.tsv")
+uninfected2_abundance
+
+infected_abundance <- read.table("infected1/abundance.tsv")
+infected_abundance
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r select}
+uninfected1_selected <- uninfected1_abundance %>% select(V1,V4)
+uninfected2_selected <- uninfected2_abundance %>% select(V1,V4)
+infected_selected <- infected_abundance %>% select(V1,V4)
+uninfected1_selected
+```
+
+```{r merge}
+intmerge <- merge(uninfected1_selected, uninfected2_selected, by = "V1")
+
+finalmerge <- merge(intmerge, infected_selected, by = "V1")
+
+finalmerge <- tibble::column_to_rownames(finalmerge, var ="V1")
+
+finalmerge
+```
+```{r rename rownames}
+
+
+names(finalmerge) <- c("uninfected1", "uninfected2", "infected")
+
+finalmerge
+
+
+```
+
+```{r round}
+
+i<- c(1,2,3)
+
+finalmerge[,i] <-
+  apply(finalmerge[,i], 2, function(x)as.integer(x))
+
+counts<- finalmerge
+
+counts
+
+```
+
+```{r q4 sample}
+
+samples <- data.frame('group' = c("uninfected", "uninfected", "infected"), row.names = c("uninfected1", "uninfected2", "infected"))
+
+samples
+
+```
+
+```{r dds}
+counts[is.na(counts)]<-0
+dds <- DESeqDataSetFromMatrix(counts, samples, design = ~ group)
+
+dds <- DESeq(dds)
+
+```
+
+```{r AvB}
+
+infected_vs_uninfected <- results(dds, contrast = c('group', 'uninfected', 'infected'))
+uninfected_vs_infected<- results(dds, contrast = c('group', 'infected', 'uninfected'))
+```
+
+```{r glimpse AvB}
+uninfected_vs_infected
+infected_vs_uninfected
+```
+
+```{r q5}
+diff_exp_frame<-data.frame(infected_vs_uninfected)
+
+```
+
+
+```{r q6}
+diff_exp_frame_sub <- diff_exp_frame %>% filter(diff_exp_frame$padj<0.05)
+diff_exp_frame_sub
+```
+
+```{r check}
+subset(diff_exp_frame, row.names(diff_exp_frame) == 'NM_022873')
+
+```
+
+
+```{r check q6 volcano}
+diff_exp_frame <- diff_exp_frame %>% 
+  mutate(ilog10P = -log10(pvalue))
+bonus1 <- diff_exp_frame["NM_002038",]
+bonus2 <- diff_exp_frame["NM_022873",]
+
+diff_exp_frame
+
+bonus <- rbind(bonus1, bonus2)
+bonus
+
+pdf(file = "/Users/binghanzheng/Desktop/volcano_plot.pdf")
+
+diff_exp_frame %>% 
+  ggplot(mapping = aes(x = log2FoldChange, y = ilog10P))+
+  geom_point()+
+  ggtitle("Bingham Zheng")+
+  labs(x= "log2 (Infected/ Uninfected)", y= "-log10 p-value")+
+  geom_abline(slope = 0, intercept = -log10(0.05), color = "blue")+
+  geom_point(data = bonus, aes(x = log2FoldChange, y = -log10(pvalue)),color = "orange")+
+  geom_text(data =bonus, aes(label = "IFI6"), color = "blue")+
+  geom_point(data = diff_exp_frame_sub, aes(x = log2FoldChange, y =-log10(pvalue), color = "red" ))
+
+dev.off()
+
+```
+
+```{r,q7}
+library(gplots)
+```
+
+```{r,q7 def}
+
+uninfected1_selected1 <- uninfected1_abundance %>% select(V1,V5)
+
+uninfected2_selected1 <- uninfected2_abundance %>% select(V1,V5)
+
+infected_selected1 <- infected_abundance %>% select(V1,V5)
+
+
+intmerge1 <- merge(uninfected1_selected1, uninfected2_selected1, by = "V1")
+
+finalmerge1 <- merge(intmerge1, infected_selected1, by = "V1")
+
+finalmerge1 <- tibble::column_to_rownames(finalmerge1, var ="V1")
+
+names(finalmerge1) <- c("uninfected1", "uninfected2", "infected")
+
+tpm_diff_exp <- finalmerge1[row.names(diff_exp_frame_sub),]
+
+tpm_diff_exp<- apply(tpm_diff_exp, 2, function(y) log2(as.numeric(y)+0.5))
+
+
+
+```
+
+```{r, q7 heatmap, fig.height=3, fig.width=3}
+library(viridis)
+#par(mar = rep(2, 4))
+
+pdf(file = "/Users/binghanzheng/Desktop/heatmap.pdf")
+par(oma=c(3,2,2,2))
+
+heatmap.2(x = as.matrix(tpm_diff_exp),
+          labRow = FALSE,
+          cexCol = 1,
+          key = TRUE,
+          keysize = 1.5,
+          col = viridis(50),
+          density.info = "none",
+          trace = "none",
+          symkey = FALSE,
+          symbreaks = FALSE,
+          key.title = "",
+          key.xlab = "log2 TPM",
+          main = "Bingham Zheng"#,
+          #lhei = c(2,3),
+          #lwid = c(1,2)
+          
+          )
+
+dev.off()
+
+```

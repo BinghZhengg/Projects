@@ -1,0 +1,947 @@
+---
+title: "Final_Project_Regression_D"
+author: "Binghan Zheng"
+date: "4/1/2022"
+output: html_document
+---
+
+# SetUp
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Libraries
+
+```{r}
+library(tidyverse)
+library(fastDummies)
+library(caret)
+```
+
+#Preparing the Data
+
+```{r}
+
+df_all <- readr::read_csv("final_project_train.csv", col_names = TRUE)
+df_all <- dummy_cols(df_all, select_columns = 'region')
+df_all <- dummy_cols(df_all, select_columns = 'customer')
+df_all$log_response <- log(df_all$response)
+
+df_all %>% head()
+```
+
+
+```{r}
+set.seed(12345)
+my_ctrl <- caret::trainControl(method = "repeatedcv",
+                               number = 5,
+                               repeats = 3,
+                               savePredictions = TRUE)
+my_metric <- "RMSE"
+```
+
+##LINEAR
+
+#Model 1: Categorical and Continuous Additive
+
+```{r, warning = FALSE, message = FALSE}
+set.seed(2033)
+mod1 <- train(log_response ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K +
+              customer_M + customer_Other + customer_Q + xa_01 + 
+              xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03, 
+                    data = df_all, 
+                    method = "lm", 
+                    metric = my_metric, 
+                    preProcess = c("center" , "scale"),
+                    trControl = my_ctrl)
+
+```
+
+#Model 2: Linear Pairwise of Continuous w/ Additive Categorical
+
+```{r,warning = FALSE, message = FALSE}
+set.seed(2033)
+mod2<- train(log_response ~ (xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 +
+                     xa_08 + xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+                     xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+                     xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+                     xw_01 + xw_02 + xw_03)^2 + region_XX + region_YY + region_ZZ + 
+                     customer_A + customer_B + customer_D + customer_E + customer_G +
+                     customer_K + customer_M + customer_Other + customer_Q, 
+                    data = df_all, 
+                    method = "lm", 
+                    metric = my_metric, 
+                    preProcess = c("center" , "scale"),
+                    trControl = my_ctrl)
+
+```
+
+#Model 3: Model A - Model 9
+
+#Model 8 - Splines Interact Customer
+
+```{r,warning = FALSE, message = FALSE}
+mod3 <- train( log_response ~ 
+              (splines::ns(xa_01, 3) + splines::ns(xa_02, 3) +
+              splines::ns(xa_03, 3) + splines::ns(xa_04, 3) +
+              splines::ns(xa_05, 3) + splines::ns(xa_06, 3) +
+              splines::ns(xa_07, 3) + splines::ns(xa_08, 3) +
+                
+              splines::ns(xb_01, 3) + splines::ns(xb_02, 3) + 
+              splines::ns(xb_03, 3) + splines::ns(xb_04, 3) +
+              splines::ns(xb_05, 3) + splines::ns(xb_06, 3) +
+              splines::ns(xb_07, 3) + splines::ns(xb_08, 3) + 
+                
+              splines::ns(xs_01, 3) + splines::ns(xs_02, 3) +
+              splines::ns(xs_03, 3) + splines::ns(xs_04, 3) +
+              splines::ns(xs_05, 3) + splines::ns(xs_06, 3) +
+                
+              splines::ns(xn_01, 3) + splines::ns(xn_02, 3) +
+              splines::ns(xn_03, 3) + splines::ns(xn_04, 3) +
+              splines::ns(xn_05, 3) + splines::ns(xn_06, 3) +
+              splines::ns(xn_07, 3) + splines::ns(xn_08, 3) +
+                
+              splines::ns(xw_01, 3) + splines::ns(xw_02, 3) +
+              splines::ns(xw_03, 3)) *
+                
+  (customer_A + customer_B + customer_D + customer_E + customer_G +
+  customer_K + customer_M +  customer_Other + customer_Q),
+  data = df_all,
+  method = "lm", 
+  metric = my_metric, 
+  preProcess = c("center" , "scale"),
+  trControl = my_ctrl)
+```
+
+#Model 4: Model B
+
+```{r,warning = FALSE, message = FALSE}
+#Model 6
+set.seed(2033)
+mod4<- train(log_response ~ (xa_01 + 
+              xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03)^2, 
+                    data = df_all, 
+                    method = "lm", 
+                    metric = my_metric, 
+                    preProcess = c("center" , "scale"),
+                    trControl = my_ctrl, trace = FALSE)
+
+```
+
+##REGULARIZED REGRESSION W/ ELASTIC NET
+
+
+#Model 5: Pairwise of Continuous w/ Additive Categorical
+
+```{r,warning = FALSE, message = FALSE}
+mod5 <- train(log_response ~ (xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 +
+                     xa_08 + xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+                     xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+                     xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+                     xw_01 + xw_02 + xw_03)^2 + region_XX + region_YY + region_ZZ + 
+                     customer_A + customer_B + customer_D + customer_E + customer_G +
+                     customer_K + customer_M + customer_Other + customer_Q,
+                  data = df_all, 
+                  method = "glmnet",
+                  metric = my_metric,
+                  preProcess = c("center", "scale"),
+                  trControl = my_ctrl,
+              trace = FALSE)
+```
+
+#Model 6: More Complex of Our Models
+
+```{r,warning = FALSE, message = FALSE}
+mod6<- train( log_response ~ 
+              (splines::ns(xa_01, 3) + splines::ns(xa_02, 3) +
+              splines::ns(xa_03, 3) + splines::ns(xa_04, 3) +
+              splines::ns(xa_05, 3) + splines::ns(xa_06, 3) +
+              splines::ns(xa_07, 3) + splines::ns(xa_08, 3) +
+                
+              splines::ns(xb_01, 3) + splines::ns(xb_02, 3) + 
+              splines::ns(xb_03, 3) + splines::ns(xb_04, 3) +
+              splines::ns(xb_05, 3) + splines::ns(xb_06, 3) +
+              splines::ns(xb_07, 3) + splines::ns(xb_08, 3) + 
+                
+              splines::ns(xs_01, 3) + splines::ns(xs_02, 3) +
+              splines::ns(xs_03, 3) + splines::ns(xs_04, 3) +
+              splines::ns(xs_05, 3) + splines::ns(xs_06, 3) +
+                
+              splines::ns(xn_01, 3) + splines::ns(xn_02, 3) +
+              splines::ns(xn_03, 3) + splines::ns(xn_04, 3) +
+              splines::ns(xn_05, 3) + splines::ns(xn_06, 3) +
+              splines::ns(xn_07, 3) + splines::ns(xn_08, 3) +
+                
+              splines::ns(xw_01, 3) + splines::ns(xw_02, 3) +
+              splines::ns(xw_03, 3)) *
+                
+  (customer_A + customer_B + customer_D + customer_E + customer_G +
+  customer_K + customer_M +  customer_Other + customer_Q), 
+                    data = df_all, 
+                    method = "glmnet", 
+                    metric = my_metric, 
+                    preProcess = c("center" , "scale"),
+                    trControl = my_ctrl)
+
+```
+
+#Model 7: Neural Network
+
+```{r,warning = FALSE, message = FALSE}
+mod7<- train(log_response ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03, 
+                    data = df_all, 
+                    method = "nnet", 
+                    metric = my_metric, 
+                    preProcess = c("center" , "scale"),
+                    trControl = my_ctrl,
+                    trace = FALSE)
+```
+
+
+#Model 8: Random Forest
+
+```{r,warning = FALSE, message = FALSE}
+set.seed(12345)
+my_ctrl_rf <- caret::trainControl(method = "repeatedcv",
+                               number = 3,
+                               
+                               savePredictions = TRUE,
+                               search = 'random')
+
+mod8 <- train(log_response ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+                   data = df_all,
+                   method = 'rf',
+                   metric = my_metric,
+                   tuneLength  = 15, 
+                   trControl = my_ctrl_rf,
+              trace = FALSE)
+
+```
+
+#Model 9: Gradient Boosted Tree
+
+```{r,warning = FALSE, message = FALSE}
+
+fit_xgb <- train(log_response ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              method = "xgbTree",
+              metric = my_metric,
+              trControl = my_ctrl,
+              objective = 'reg:squarederror')
+
+
+xgb_grid <- expand.grid(nrounds = seq(100, 700, by = 100),
+                        max_depth = c(3, 4, 5),
+                        eta = c(0.5*fit_xgb$bestTune$eta, fit_xgb$bestTune$eta),
+                        gamma = fit_xgb$bestTune$gamma,
+                        colsample_bytree = fit_xgb$bestTune$colsample_bytree,
+                        min_child_weight = fit_xgb$bestTune$min_child_weight,
+                        subsample = fit_xgb$bestTune$subsample)
+
+mod9 <- train(log_response ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              tuneGrid = xgb_grid,
+              method = "xgbTree",
+              metric = my_metric,
+              trControl = my_ctrl,
+              objective = 'reg:squarederror')
+
+```
+
+#Model 10: SVM
+
+```{r}
+#choices: SVM, GAM, MARS, PLS, Deep Neural Network, K-nearest neighbors
+mod10 <- train(log_response ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              method = "svmRadial",
+              metric = my_metric,
+              preProcess = c("center", "scale"),
+              trControl = my_ctrl)
+
+```
+
+#Model 11: PLS
+
+```{r}
+#PLS
+#choices: SVM, GAM, MARS, PLS, Deep Neural Network, K-nearest neighbors
+pls_grid <- expand.grid(ncomp = 1:5)
+
+
+mod11 <- train(log_response ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              method = "pls",
+              metric = my_metric,
+              tuneGrid = pls_grid,
+              preProcess = c("center", "scale"),
+              trControl = my_ctrl)
+```
+
+#Model Evaluation
+
+```{r, fig.width= 12, fig.height= 10}
+mod_1_RMSE <- min(mod1$results['RMSE'])
+mod_2_RMSE <- min(mod2$results['RMSE'])
+mod_3_RMSE <- min(mod3$results['RMSE'])
+mod_4_RMSE <- min(mod4$results['RMSE'])
+mod_5_RMSE <- min(mod5$results['RMSE'])
+mod_6_RMSE <- min(mod6$results['RMSE'])
+mod_7_RMSE <- min(mod7$results['RMSE'])
+mod_8_RMSE <- min(mod8$results['RMSE'])
+mod_9_RMSE <- min(mod9$results['RMSE'])
+mod_10_RMSE <- min(mod10$results['RMSE'])
+mod_11_RMSE <- min(mod11$results['RMSE'])
+
+
+mod_1_R2 <- max(mod1$results['Rsquared'])
+mod_2_R2 <- max(mod2$results['Rsquared'])
+mod_3_R2 <- max(mod3$results['Rsquared'])
+mod_4_R2 <- max(mod4$results['Rsquared'])
+mod_5_R2 <- max(mod5$results['Rsquared'])
+mod_6_R2 <- max(mod6$results['Rsquared'])
+mod_7_R2 <- max(mod7$results['Rsquared'])
+mod_8_R2 <- max(mod8$results['Rsquared'])
+mod_9_R2 <- max(mod9$results['Rsquared'])
+mod_10_R2 <- max(mod10$results['Rsquared'])
+mod_11_R2 <- max(mod11$results['Rsquared'])
+
+results <- tibble(RMSE = c(mod_1_RMSE,mod_2_RMSE, mod_3_RMSE, mod_4_RMSE, mod_5_RMSE, mod_6_RMSE, mod_7_RMSE, mod_8_RMSE, mod_9_RMSE, mod_10_RMSE, mod_11_RMSE), 
+                  Rsquared = c(mod_1_R2,mod_2_R2,mod_3_R2,mod_4_R2,mod_5_R2,mod_6_R2,mod_7_R2,mod_8_R2,mod_9_R2, mod_10_R2, mod_11_R2),
+                  model = c("Cat-Cont Additive", "Pairwise Interaction w/ Cat", "Splines", "Pairwise", "GLMNET Interaction", "GLMNET Splines", "Neural Network", "Random Forest", "XGB", "SVM", "PLS")) 
+
+sort_results <- results %>% arrange(desc(RMSE))
+sort_results
+```
+
+
+```{r, fig.width=6}
+sort_results %>%
+  ggplot(mapping = aes(x = model, y = RMSE)) + 
+  geom_point(mapping = aes(color = model, size = 5)) + 
+  theme_bw() +
+  theme(text = element_text(size = 20), axis.text.x = element_text(angle = 90, vjust = 0.5))
+  
+
+sort_results %>%
+  ggplot(mapping = aes(x = model, y = Rsquared)) + 
+  geom_point(mapping = aes(color = model, size = 5)) + 
+  theme_bw()  +
+  theme(text = element_text(size = 20), axis.text.x = element_text(angle = 90, vjust = 0.5)) 
+
+```
+
+
+A few of these models are clearly superfluous, we should get a better look at our best performing models by pruning our set of those models which are not performing well in comparison. 
+
+```{r, fig.width=8}
+sort_results %>% filter(RMSE < 0.7) %>%
+  ggplot(mapping = aes(x = model, y = RMSE)) + 
+  geom_point(mapping = aes(color = model, size = 5)) + 
+  theme_bw() +
+  theme(text = element_text(size = 20), axis.text.x = element_text(angle = 45, vjust = 0.5)) + geom_hline(yintercept = mod_10_RMSE, color = 'red')
+  
+
+sort_results %>% filter(Rsquared > 0.3) %>%
+  ggplot(mapping = aes(x = model, y = Rsquared)) + 
+  geom_point(mapping = aes(color = model, size = 5)) + 
+  theme_bw()  +
+  theme(text = element_text(size = 20), axis.text.x = element_text(angle = 45, vjust = 0.5)) + geom_hline(yintercept = mod_10_R2, color = 'red')
+```
+
+Best Model:
+
+Based on the performance metrics of R-squared and RMSE, the best overall model at the current time is the Support Vector Machine
+
+###CLASSIFICATION
+
+#TRAIN CONTROL
+
+```{r, eval=TRUE}
+ctrl_acc <- trainControl(method = "repeatedcv",
+                         number = 10,
+                         repeats = 3,
+                         savePredictions = TRUE)
+
+metric_acc <- "Accuracy"
+
+
+ctrl_roc <- trainControl(method = "repeatedcv",
+                         number = 5,
+                         repeats = 5,
+                         summaryFunction = twoClassSummary,
+                         classProbs = TRUE,
+                         savePredictions = TRUE)
+
+metric_roc <- "ROC"
+```
+
+
+##LINEAR
+
+#Model 1: Categorical and Continuous Additive
+
+```{r}
+mod1_acc <- train(  outcome ~ xa_01 + 
+                       xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+                       xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+                       xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+                       xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+                       xw_01 + xw_02 + xw_03,
+                     data = df_all,
+                     method = "glm",
+                     metric = metric_acc,
+                     preProcess = c("center", "scale"),
+                     trControl = ctrl_acc)
+
+mod1_roc <- train(  outcome ~ xa_01 + 
+                       xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+                       xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+                       xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+                       xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+                       xw_01 + xw_02 + xw_03,
+                     data = df_all,
+                     method = "glm",
+                     metric = metric_roc,
+                     preProcess = c("center", "scale"),
+                     trControl = ctrl_roc)
+```
+
+#Model 2: Linear Pairwise of Continuous w/ Additive Categorical
+
+```{r,warning = FALSE, message = FALSE}
+mod2_acc <- train(outcome ~ (xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03)^2 + region_XX + region_YY + region_ZZ + customer_A +
+                customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +
+              customer_Other + customer_Q,
+                  data = df_all,
+                  method = "glm",
+                  metric = metric_acc,
+                  preProcess = c("center", "scale"),
+                  trControl = ctrl_acc)
+
+mod2_roc <- train(outcome ~ (xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03)^2 + region_XX + region_YY + region_ZZ + customer_A +
+                customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +
+              customer_Other + customer_Q,
+                  data = df_all,
+                  method = "glm",
+                  metric = metric_roc,
+                  preProcess = c("center", "scale"),
+                  trControl = ctrl_roc)
+```
+
+
+#Model 3: Model A
+
+```{r,warning = FALSE, message = FALSE}
+mod3_acc <- train(outcome ~ 
+              (xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08) *
+  (region_XX + region_YY + region_ZZ) +
+              (xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08) * 
+  (region_XX + region_YY + region_ZZ) +
+              (xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06)*
+  (region_XX + region_YY + region_ZZ) +
+              (xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08)*
+  (region_XX + region_YY + region_ZZ) +
+              (xw_01 + xw_02 + xw_03)*
+  (region_XX + region_YY + region_ZZ),
+  data = df_all,
+  method = "glm",
+  metric = metric_acc,
+  preProcess = c("center", "scale"),
+  trControl = ctrl_acc)
+
+mod3_roc <- train(outcome ~ 
+              (xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08) *
+  (region_XX + region_YY + region_ZZ) +
+              (xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08) * 
+  (region_XX + region_YY + region_ZZ) +
+              (xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06)*
+  (region_XX + region_YY + region_ZZ) +
+              (xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08)*
+  (region_XX + region_YY + region_ZZ) +
+              (xw_01 + xw_02 + xw_03)*
+  (region_XX + region_YY + region_ZZ),
+  data = df_all,
+  method = "glm",
+  metric = metric_roc,
+  preProcess = c("center", "scale"),
+  trControl = ctrl_roc)
+```
+
+#Model 4: Model B
+
+```{r,warning = FALSE, message = FALSE}
+mod4_acc <- train(outcome ~ 
+              splines::ns(xa_01, 2) + splines::ns(xa_02, 2) + splines::ns(xa_03, 2) + splines::ns(xa_04, 2) +
+              splines::ns(xa_05, 2) + splines::ns(xa_06, 2) + splines::ns(xa_07, 2) + splines::ns(xa_08, 2) +
+              
+              splines::ns(xb_01, 2) + splines::ns(xb_02, 2) + splines::ns(xb_03, 2) + splines::ns(xb_04, 2) +
+              splines::ns(xb_05, 2) + splines::ns(xb_06, 2) + splines::ns(xb_07, 2) + splines::ns(xb_08, 2) + 
+              
+              splines::ns(xs_01, 2) + splines::ns(xs_02, 2) + splines::ns(xs_03, 2) + splines::ns(xs_04, 2) +
+              splines::ns(xs_05, 2) + splines::ns(xs_06, 2) +
+              
+              splines::ns(xn_01, 2) + splines::ns(xn_02, 2) + splines::ns(xn_03, 2) + splines::ns(xn_04, 2) +
+              splines::ns(xn_05, 2) + splines::ns(xn_06, 2) + splines::ns(xn_07, 2) + splines::ns(xn_08, 2) +
+              
+              splines::ns(xw_01, 2) + splines::ns(xw_02, 2) + splines::ns(xw_03, 2),
+  data = df_all,
+  method = "glm",
+  metric = metric_acc,
+  preProcess = c("center", "scale"),
+  trControl = ctrl_acc)
+
+mod4_roc <- train(outcome ~ 
+              splines::ns(xa_01, 2) + splines::ns(xa_02, 2) + splines::ns(xa_03, 2) + splines::ns(xa_04, 2) +
+              splines::ns(xa_05, 2) + splines::ns(xa_06, 2) + splines::ns(xa_07, 2) + splines::ns(xa_08, 2) +
+              
+              splines::ns(xb_01, 2) + splines::ns(xb_02, 2) + splines::ns(xb_03, 2) + splines::ns(xb_04, 2) +
+              splines::ns(xb_05, 2) + splines::ns(xb_06, 2) + splines::ns(xb_07, 2) + splines::ns(xb_08, 2) + 
+              
+              splines::ns(xs_01, 2) + splines::ns(xs_02, 2) + splines::ns(xs_03, 2) + splines::ns(xs_04, 2) +
+              splines::ns(xs_05, 2) + splines::ns(xs_06, 2) +
+              
+              splines::ns(xn_01, 2) + splines::ns(xn_02, 2) + splines::ns(xn_03, 2) + splines::ns(xn_04, 2) +
+              splines::ns(xn_05, 2) + splines::ns(xn_06, 2) + splines::ns(xn_07, 2) + splines::ns(xn_08, 2) +
+              
+              splines::ns(xw_01, 2) + splines::ns(xw_02, 2) + splines::ns(xw_03, 2),
+  data = df_all,
+  method = "glm",
+  metric = metric_roc,
+  preProcess = c("center", "scale"),
+  trControl = ctrl_roc)
+```
+
+##REGULARIZED REGRESSION W/ ELASTIC NET
+
+#Model 5: Pairwise of Continuous w/ Additive Categorical
+
+```{r,warning = FALSE, message = FALSE}
+mod5_acc <- train(outcome ~ 
+              (xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 +
+                     xa_08 + xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+                     xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+                     xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+                     xw_01 + xw_02 + xw_03)^2 + region_XX + region_YY + region_ZZ + 
+                     customer_A + customer_B + customer_D + customer_E + customer_G +
+                     customer_K + customer_M + customer_Other + customer_Q, data = df_all,
+                  method = "glmnet",
+                  metric = metric_acc,
+                  preProcess = c("center", "scale"),
+                  trControl = ctrl_acc)
+
+mod5_roc <- train(outcome ~ 
+              (xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 +
+                     xa_08 + xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+                     xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+                     xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+                     xw_01 + xw_02 + xw_03)^2 + region_XX + region_YY + region_ZZ + 
+                     customer_A + customer_B + customer_D + customer_E + customer_G +
+                     customer_K + customer_M + customer_Other + customer_Q, data = df_all,
+                  method = "glmnet",
+                  metric = metric_roc,
+                  preProcess = c("center", "scale"),
+                  trControl = ctrl_roc)
+```
+
+#Model 6: Complex Model A
+
+```{r,warning = FALSE, message = FALSE}
+mod6_acc <- train(outcome ~ 
+              splines::ns(xa_01, 2) + splines::ns(xa_02, 2) + splines::ns(xa_03, 2) + splines::ns(xa_04, 2) +
+              splines::ns(xa_05, 2) + splines::ns(xa_06, 2) + splines::ns(xa_07, 2) + splines::ns(xa_08, 2) +
+              
+              splines::ns(xb_01, 2) + splines::ns(xb_02, 2) + splines::ns(xb_03, 2) + splines::ns(xb_04, 2) +
+              splines::ns(xb_05, 2) + splines::ns(xb_06, 2) + splines::ns(xb_07, 2) + splines::ns(xb_08, 2) + 
+              
+              splines::ns(xs_01, 2) + splines::ns(xs_02, 2) + splines::ns(xs_03, 2) + splines::ns(xs_04, 2) +
+              splines::ns(xs_05, 2) + splines::ns(xs_06, 2) +
+              
+              splines::ns(xn_01, 2) + splines::ns(xn_02, 2) + splines::ns(xn_03, 2) + splines::ns(xn_04, 2) +
+              splines::ns(xn_05, 2) + splines::ns(xn_06, 2) + splines::ns(xn_07, 2) + splines::ns(xn_08, 2) +
+              
+              splines::ns(xw_01, 2) + splines::ns(xw_02, 2) + splines::ns(xw_03, 2),
+  data = df_all,
+  method = "glmnet",
+  metric = metric_acc,
+  preProcess = c("center", "scale"),
+  trControl = ctrl_acc)
+
+mod6_roc <- train(outcome ~ 
+              splines::ns(xa_01, 2) + splines::ns(xa_02, 2) + splines::ns(xa_03, 2) + splines::ns(xa_04, 2) +
+              splines::ns(xa_05, 2) + splines::ns(xa_06, 2) + splines::ns(xa_07, 2) + splines::ns(xa_08, 2) +
+              
+              splines::ns(xb_01, 2) + splines::ns(xb_02, 2) + splines::ns(xb_03, 2) + splines::ns(xb_04, 2) +
+              splines::ns(xb_05, 2) + splines::ns(xb_06, 2) + splines::ns(xb_07, 2) + splines::ns(xb_08, 2) + 
+              
+              splines::ns(xs_01, 2) + splines::ns(xs_02, 2) + splines::ns(xs_03, 2) + splines::ns(xs_04, 2) +
+              splines::ns(xs_05, 2) + splines::ns(xs_06, 2) +
+              
+              splines::ns(xn_01, 2) + splines::ns(xn_02, 2) + splines::ns(xn_03, 2) + splines::ns(xn_04, 2) +
+              splines::ns(xn_05, 2) + splines::ns(xn_06, 2) + splines::ns(xn_07, 2) + splines::ns(xn_08, 2) +
+              
+              splines::ns(xw_01, 2) + splines::ns(xw_02, 2) + splines::ns(xw_03, 2),
+  data = df_all,
+  method = "glmnet",
+  metric = metric_roc,
+  preProcess = c("center", "scale"),
+  trControl = ctrl_roc)
+```
+
+#Model 7: Neural Network
+
+```{r,warning = FALSE, message = FALSE}
+mod7_acc <- train(outcome ~ 
+                    xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03 + region_XX + region_YY + region_ZZ +
+                customer_A + customer_B + customer_D + customer_E + customer_G +
+                customer_K + customer_M +  customer_Other + customer_Q , data = df_all,
+                  method = "nnet",
+                  metric = metric_acc,
+                  preProcess = c("center", "scale"),
+                  trControl = ctrl_acc,
+              trace = 0)
+
+mod7_roc <- train(outcome ~ 
+                    xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03 + region_XX + region_YY + region_ZZ +
+                customer_A + customer_B + customer_D + customer_E + customer_G +
+                customer_K + customer_M +  customer_Other + customer_Q , data = df_all,
+                  method = "nnet",
+                  metric = metric_roc,
+                  preProcess = c("center", "scale"),
+                  trControl = ctrl_roc,
+              trace = 0)
+```
+
+
+
+#Model 8: Random Forest
+
+```{r,warning = FALSE, message = FALSE}
+set.seed(12345)
+my_ctrl_rf <- caret::trainControl(method = "cv",
+                               number = 3,
+                               savePredictions = TRUE,
+                               search = 'random')
+
+mod8_acc <- train(outcome ~ 
+                    xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03 + region_XX + region_YY + region_ZZ +
+                customer_A + customer_B + customer_D + customer_E + customer_G +
+                customer_K + customer_M +  customer_Other + customer_Q ,
+                   data = df_all,
+                   method = 'rf',
+                   metric = metric_acc,
+                   tuneLength  = 15, 
+                   trControl = my_ctrl_rf,
+              trace = FALSE)
+
+mod8_roc <- train(outcome ~ 
+                    xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03 + region_XX + region_YY + region_ZZ +
+                customer_A + customer_B + customer_D + customer_E + customer_G +
+                customer_K + customer_M +  customer_Other + customer_Q ,
+                   data = df_all,
+                   method = 'rf',
+                   metric = metric_roc,
+                   tuneLength  = 15, 
+                   trControl = ctrl_roc,
+              trace = FALSE)
+
+```
+
+#Model 9: Gradient Boosted Tree
+
+```{r,warning = FALSE, message = FALSE}
+#FIT FOR ACCURACY
+fit_xgb <- train(outcome ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              method = "xgbTree",
+              metric = metric_acc,
+              trControl = ctrl_acc,
+              objective = 'reg:squarederror',
+              trace = 0)
+
+
+xgb_grid <- expand.grid(nrounds = seq(100, 700, by = 100),
+                        max_depth = c(3, 4, 5),
+                        eta = c(0.5*fit_xgb$bestTune$eta, fit_xgb$bestTune$eta),
+                        gamma = fit_xgb$bestTune$gamma,
+                        colsample_bytree = fit_xgb$bestTune$colsample_bytree,
+                        min_child_weight = fit_xgb$bestTune$min_child_weight,
+                        subsample = fit_xgb$bestTune$subsample)
+
+mod9_acc <- train(outcome ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              tuneGrid = xgb_grid,
+              method = "xgbTree",
+              metric = metric_acc,
+              trControl = ctrl_acc,
+              objective = 'reg:squarederror',
+              trace = 0)
+
+
+# FIT FOR ROC 
+
+fit_xgb <- train(outcome ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              method = "xgbTree",
+              metric = metric_acc,
+              trControl = ctrl_acc,
+              objective = 'reg:squarederror',
+              trace = 0)
+
+xgb_grid <- expand.grid(nrounds = seq(100, 700, by = 100),
+                        max_depth = c(3, 4, 5),
+                        eta = c(0.5*fit_xgb$bestTune$eta, fit_xgb$bestTune$eta),
+                        gamma = fit_xgb$bestTune$gamma,
+                        colsample_bytree = fit_xgb$bestTune$colsample_bytree,
+                        min_child_weight = fit_xgb$bestTune$min_child_weight,
+                        subsample = fit_xgb$bestTune$subsample)
+
+mod9_roc <- train(outcome ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G + customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              tuneGrid = xgb_grid,
+              method = "xgbTree",
+              metric = metric_roc,
+              trControl = ctrl_roc,
+              objective = 'reg:squarederror',
+              trace = 0)
+```
+
+#Model 10: 
+
+```{r}
+#choices: SVM, Naive Bayes, GAM, MARS, PLS, Deep Neural Network, K-nearest neighbors
+mod10_acc <- train(outcome ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G +
+              customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              method = "svmRadial",
+              metric = metric_acc,
+              preProcess = c("center", "scale"),
+              trControl = ctrl_acc)
+
+mod10_roc <- train(outcome ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G +
+              customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              method = "svmRadial",
+              metric = metric_roc,
+              preProcess = c("center", "scale"),
+              trControl = ctrl_roc)
+```
+
+#Model 11: 
+
+```{r}
+pls_grid <- expand.grid(ncomp = 1:5)
+
+
+mod11_acc <- train(outcome ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G +
+              customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              method = "pls",
+              metric = metric_acc,
+              tuneGrid = pls_grid,
+              preProcess = c("center", "scale"),
+              trControl = ctrl_acc)
+
+mod11_roc <- train(outcome ~ region_XX + region_YY + region_ZZ + 
+              customer_A + customer_B + customer_D + customer_E + customer_G +
+              customer_K + customer_M +  customer_Other + customer_Q +
+              xa_01 + xa_02 + xa_03 + xa_04 + xa_05 + xa_06 + xa_07 + xa_08 +
+              xb_01 + xb_02 +  xb_03 + xb_04 + xb_05 + xb_06 +  xb_07 + xb_08 +
+              xs_01 + xs_02 + xs_03 + xs_04 + xs_05 + xs_06 +
+              xn_01 + xn_02 + xn_03 + xn_04 + xn_05 + xn_06 + xn_07 + xn_08 +
+              xw_01 + xw_02 + xw_03,
+              data = df_all,
+              method = "pls",
+              metric = metric_roc,
+              tuneGrid = pls_grid,
+              preProcess = c("center", "scale"),
+              trControl = ctrl_roc)
+```
+
+#Model Evaluation
+
+```{r}
+mod_1_accuracy <- min(mod1_acc$results['Accuracy'])
+mod_2_accuracy <- min(mod2_acc$results['Accuracy'])
+mod_3_accuracy <- min(mod3_acc$results['Accuracy'])
+mod_4_accuracy <- min(mod4_acc$results['Accuracy'])
+mod_5_accuracy <- min(mod5_acc$results['Accuracy'])
+mod_6_accuracy <- min(mod6_acc$results['Accuracy'])
+mod_7_accuracy <- min(mod7_acc$results['Accuracy'])
+mod_8_accuracy <- min(mod8_acc$results['Accuracy'])
+mod_9_accuracy <- min(mod9_acc$results['Accuracy'])
+mod_10_accuracy<- min(mod10_acc$results['Accuracy'])
+mod_11_accuracy<- min(mod11_acc$results['Accuracy'])
+
+mod_1_roc <- min(mod1_roc$results['ROC'])
+mod_2_roc <- min(mod2_roc$results['ROC'])
+mod_3_roc <- min(mod3_roc$results['ROC'])
+mod_4_roc <- min(mod4_roc$results['ROC'])
+mod_5_roc <- min(mod5_roc$results['ROC'])
+mod_6_roc <- min(mod6_roc$results['ROC'])
+mod_7_roc <- min(mod7_roc$results['ROC'])
+mod_8_roc <- min(mod8_roc$results['ROC'])
+mod_9_roc <- min(mod9_roc$results['ROC'])
+mod_10_roc<- min(mod10_roc$results['ROC'])
+mod_11_roc<- min(mod11_roc$results['ROC'])
+
+
+results <- tibble(Accuracy = c(mod_1_accuracy, mod_2_accuracy, mod_3_accuracy, mod_4_accuracy, mod_5_accuracy, mod_6_accuracy, mod_7_accuracy, mod_8_accuracy, mod_9_accuracy, mod_10_accuracy,mod_11_accuracy), 
+                  ROC = c(mod_1_roc, mod_2_roc, mod_3_roc, mod_4_roc, mod_5_roc, mod_6_roc, mod_7_roc, mod_8_roc, mod_9_roc, mod_10_roc, mod_11_roc),
+                  model = c("Catagorical-Continuous Additive", "Pairwise Interaction w/ Catagorical", "Splines:Regions", "Splines", "GLMNET Pairwise Interaction", "GLMNET Splines", "Neural Network", "Random Forest", "XGB", "SVM", "PLS"))
+
+ 
+
+
+
+sort_acc_results <- results %>% arrange(desc(Accuracy))
+sort_roc_results <- results %>% arrange(desc(ROC))
+
+```
+
+Plotting results 
+
+```{r, fig.width=12}
+sort_acc_results %>%
+  ggplot(mapping = aes(x = model, y = Accuracy)) + 
+  geom_point(mapping = aes(color = model, size = 1)) + 
+  theme_bw() +
+  theme(text = element_text(size = 20), axis.text.x = element_text(angle = 45, vjust = 0.5))
+
+sort_roc_results %>%
+  ggplot(mapping = aes(x = model, y = ROC)) + 
+  geom_point(mapping = aes(color = model, size = 1)) + 
+  theme_bw()  +
+  theme(text = element_text(size = 20), axis.text.x = element_text(angle = 45, vjust = 0.5)) 
+```
+
+A few of these models are clearly superfluous, we should get a better look at our best performing models by pruning our set of those models which are not performing well in comparison. 
+
+```{r, fig.width=15}
+sort_acc_results %>% filter(Accuracy > 0.75) %>%
+  ggplot(mapping = aes(x = model, y = Accuracy)) + 
+  geom_point(mapping = aes(color = model, size = 3)) + 
+  theme_bw() +
+  theme(text = element_text(size = 20), axis.text.x = element_text(angle = 45, vjust = 0.5)) + geom_hline(yintercept = mod_1_accuracy, color = 'red')
+  
+
+sort_roc_results %>% filter(ROC > 0.75) %>%
+  ggplot(mapping = aes(x = model, y = ROC)) + 
+  geom_point(mapping = aes(color = model, size = 3)) + 
+  theme_bw()  +
+  theme(text = element_text(size = 20), axis.text.x = element_text(angle = 45, vjust = 0.5)) + geom_hline(yintercept = mod_1_roc, color = 'red' ) 
+```
+
+Best model that maximizes ROC AUC and Accuracy:
