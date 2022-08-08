@@ -320,12 +320,10 @@ public class BST <T extends Comparable<T>> implements BST_Inter<T>
      {
         BTNode<T> left = null;
         BTNode<T> right = null;
-        if (curr.getLeft() != null) 
-        {
+        if (curr.getLeft() != null) {
             left = recursiveCopy(curr.getLeft());
         }
-        if (curr.getRight() != null) 
-        {
+        if (curr.getRight() != null) {
             right = recursiveCopy(curr.getRight());
         }
         BTNode<T> newNode = new BTNode<T>(curr.getKey());
