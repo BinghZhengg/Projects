@@ -1,0 +1,10 @@
+        distance_dict = {}
+        new_data_frame = pd.DataFrame(columns = ["station_id", 'distances', 'num_bikes_available'])
+        for i, j in df.iterrows():
+            available = dfs.loc[i]["num_bikes_available"]
+            if available >0:
+                distances = self.distance(latitude, longitude, j['lat'], j['lon'])
+                a_dict = {"station_id":j["station_id"], "distances":distances, "num_bikes_available":available}
+                new_data_frame.loc[len(new_data_frame.index)] = [j["station_id"], distances, available]
+            else:
+                continue

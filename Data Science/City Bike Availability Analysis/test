@@ -1,0 +1,43 @@
+   df_info = self.df_info_out
+           stations_list1 = df_info['data']
+           dfi = pd.DataFrame.from_dict(stations_list1['stations'], orient = 'columns')
+           dfi["index"] = list(range(len(dfi)))
+
+           df_status = self.df_status_out
+           stations_list2 = df_status['data']
+           dfs = pd.DataFrame.from_dict(stations_list2['stations'], orient = 'columns')
+           dfs["index"] = list(range(len(dfs)))
+
+
+           distance_dict = {} #distance: index
+           distance_list = [] #distance
+
+           for i in range(len(dfi)):
+               row = dfi[dfi["index"]==i]
+               check_row = dfs[dfs["index"]==i]
+               available = check_row['num_bikes_available']
+               if (available>0).astype(int):
+                   distances = self.distance(latitude, longitude, row['lat'], row['lon'])
+                   distance_list.append(distances)
+                   distance_dict[distances] = i
+               else:
+                   i=i+1
+
+           distance_list = sorted(distance_list)
+
+           return distance_list
+
+           min_distance = distance_list[0:3]
+           result = []
+           for j in range(3):
+               result.append(distance_dict[min_distance[j]])
+
+           shortest_stations ={}
+
+           for k in range(3):
+               index_row = dfi[dfi["index"]==result[k]]
+               key = str(index_row['station_id'])
+               val = str(index_row['name'])
+               shortest_stations[key] = val
+
+           return shortest_stations
