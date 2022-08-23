@@ -1,0 +1,226 @@
+---
+title: "Distance-based phylogenetic trees in R"
+author: "Nathan Brouwer"
+date: "10/8/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preliminaries
+
+```{r}
+##install.packages("ape")
+##install.packages("phangorn")
+
+library(ape)
+library(phangorn)
+```
+
+
+## Example 1: 3 Sequences
+
+
+### Similarity matrix
+
+This matrix is based on the proportion of bases that are identical between sequence.  This is often referred to as **PID** for **Proportion Identical** or **Percentage Identical**.  
+
+BLAST reports PID in its main output.  PID is a very simple metric of similarity; more sophisticated measures are used in pratice.
+
+
+Make a similarity matrix with the matrix() command.  Note that I have to declare the number of rows
+```{r}
+# Bad matrix 1
+matrix(c(1.0, 0.5, 0.3,
+         0.5, 1.0, 0.4,
+         0.3, 0.4, 1.0))
+
+
+# Good matrix
+matrix(c(1.0, 0.5, 0.3,
+         0.5, 1.0, 0.4,
+         0.3, 0.4, 1.0),
+       nrow = 3)
+
+
+
+```
+
+
+Store the matrix
+```{r}
+my_sim_mat <- matrix(c(1.0, 0.5, 0.3,
+                       0.5, 1.0, 0.4,
+                       0.3, 0.4, 1.0),
+                 nrow = 3,
+                 byrow = T)
+```
+
+
+Label the matrix with row.names() and colnames()
+```{r}
+row.names(my_sim_mat) <- c("G","T","M")
+colnames(my_sim_mat) <- c("G","T","M")
+```
+
+
+### Disimilarity matrix
+
+Similarity, disimilarity, and distance are all related.  Most methods use distance, not similarity.  
+
+We can do vectorized math to recalculate the matrix
+
+```{r}
+my_dist_mat <- 1-my_sim_mat
+```
+
+
+### Convert to R's distance format
+
+```{r}
+my_dist_mat2 <- as.dist(my_dist_mat)
+```
+
+
+### Build a neighbor-joining (nj) tree
+
+Neighbor Joining is one of the most common ways to build a tree using molecular data that's been converted to sequences; its one of the options within BLAST.
+
+
+Build the tree with nj()
+```{r}
+my_nj <- ape::nj(my_dist_mat2)
+```
+
+Plot the tree as an "unrooted" tree
+```{r}
+plot(my_nj, "unrooted")
+```
+
+
+Plot the tree as an "rooted" tree
+```{r}
+plot(my_nj)
+```
+
+
+UPGMA/WPGMA are other algorithms that work with distance matrices.  They are not commonly used now but are useful for teaching becaues they can easily be done by hand on small datasets.
+```{r}
+my_upgma <- phangorn::upgma(my_dist_mat2)
+```
+
+
+Plot the UPGMA tree
+```{r}
+plot(my_upgma)
+```
+
+Compare the rooted NJ and the UPGMA
+
+```{r}
+par(mfrow = c(1,2))
+plot(my_nj)
+plot(my_upgma)
+```
+
+WPGMA tree
+```{r}
+plot(wpgma(my_dist_mat2))
+```
+
+
+Minimum evolution tree
+
+```{r}
+plot(fastme.ols(my_dist_mat2))
+```
+
+
+## Example 2: 5 Sequences
+
+
+Build the matrix.
+
+Be sure to add the nrow = ... statement.
+```{r}
+five_sim_mat <- matrix(c(1.0,	  0.0,  0.0,  0.0,  0.0,		
+                         1.0,   1.0,	0.0,  0.0,  0.0,				
+                         1.0,   1.0,	1.0,	0.0,  0.0,		
+                         0.8,	  0.8,	0.8,	1.0,	0.0,		
+                         0.6, 	0.6,	0.6,	0.8,	1.0)
+                       , nrow = 5
+                       , byrow = T)
+```
+
+Name things
+```{r}
+row.names(five_sim_mat) = c("ME", "B", "G", "T", "MW")
+colnames(five_sim_mat) = c("ME", "B", "G", "T", "MW")
+```
+
+Turn into a distnace matrix.  This is 2 steps and requires the as.dist() command
+```{r}
+five_dist_mat = 1-five_sim_mat
+five_dist_mat2 = as.dist(five_dist_mat)
+```
+
+Neighbor-Joining tree with nj()
+```{r}
+five_nj = ape::nj(five_dist_mat2)
+
+```
+
+
+Plot unrooted NJ tree
+```{r}
+plot(five_nj, "unrooted")
+```
+
+Plot rooted NJ tree
+```{r}
+plot(five_nj)
+```
+
+Build UPGMA tree
+```{r}
+five_upgma <- phangorn::upgma(five_dist_mat2)
+```
+
+
+Plot UPGMA tree
+```{r}
+plot(five_upgma)
+```
+
+
+Compare rooted NJ and UPGMA plots
+```{r}
+par(mfrow = c(1,2))
+plot(five_nj)
+plot(five_upgma)
+```
+
+
+
+Build WPGMA tree
+```{r}
+plot(wpgma(five_dist_mat2))
+```
+
+
+Compare rooted WPGMA and UPGMA plots
+```{r}
+par(mfrow = c(1,2))
+plot(five_upgma)
+plot(wpgma(five_dist_mat2))
+```
+
+
+Build Minimum evolution tree
+```{r}
+plot(fastme.ols(five_dist_mat2))
+```
+
+

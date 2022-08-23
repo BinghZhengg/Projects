@@ -1,0 +1,52 @@
+---
+title: "RNA-seq Analysis"
+author: "Binghan Zheng"
+output: html_document
+---
+  
+```{r, read}
+
+genes <- read.table('zf_counts.txt', header=T, colClasses=c('character','numeric', 'numeric', 'numeric', 'numeric')) 
+
+genes["X1kcell_rpk"] <- genes["X1kcell"]/genes["Length"]*10**3
+
+genes["dome1_rpk"] <- genes["dome1"]/genes["Length"]*10**3
+
+genes["dome2_rpk"] <- genes["dome2"]/genes["Length"]*10**3
+
+genes["X1kcell_tpm"] <- genes["X1kcell_rpk"]*10**6/sum(genes["X1kcell_rpk"])
+
+genes["dome1_tpm"] <- genes["dome1_rpk"]*10**6/sum(genes["dome1_rpk"])
+
+genes["dome2_tpm"] <- genes["dome2_rpk"]*10**6/sum(genes["dome2_rpk"])
+
+genes["X1kcell_lg_tpm"] <- log2(genes["X1kcell_tpm"] + 0.5)
+
+genes["dome1_lg_tpm"] <- log2(genes["dome1_tpm"] + 0.5)
+
+genes["dome2_lg_tpm"] <- log2(genes["dome2_tpm"] + 0.5)
+
+genes["diff_log_d1_over_x1"] <- genes["dome1_lg_tpm"]-genes["X1kcell_lg_tpm"]
+
+genes["diff_log_d2_over_x1"] <- genes["dome2_lg_tpm"]-genes["X1kcell_lg_tpm"]
+
+genes["fold_log_d1_over_x1"] <- 2^genes["diff_log_d1_over_x1"]
+genes["fold_log_d2_over_x1"] <- 2^genes["diff_log_d2_over_x1"]
+
+genes[genes$Geneid=="ENSDARG00000096007",]
+
+genes[genes$fold_log_d1_over_x1==max(genes$fold_log_d1_over_x1),]
+
+two_fold_down <- subset(genes, dome1_lg_tpm-X1kcell_lg_tpm< -1)
+
+two_fold_up <- subset(genes, dome1_lg_tpm-X1kcell_lg_tpm> 1)
+
+two_fold_diff <- subset(genes, abs(dome1_lg_tpm-X1kcell_lg_tpm)> 1)
+
+plot(genes$X1kcell_lg_tpm, genes$dome1_lg_tpm, xlab = '1K cell (log2 TPM)', ylab = 'Dome rep 1 (log2 TPM)')
+
+points(two_fold_up$X1kcell_lg_tpm, two_fold_up$dome1_lg_tpm, col = 'gold')
+
+head(genes)
+
+```

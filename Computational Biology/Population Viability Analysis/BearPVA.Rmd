@@ -1,0 +1,499 @@
+---
+title: 'Porfolio 1: PVA'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Data: Figure 5 (plus 10 years)
+
+Make data vectors, calculate lambda, and put together dataframe with all necessary data.
+
+### census
+
+The census period; an index from 1 to 39 of how many years of data have been collected.
+
+```{r}
+census <- 1:39
+```
+
+### year t
+
+The year: 1959 to 1997 (Dennis et al use 1959-1987)
+
+```{r}
+year.t   <- 1959:1997
+```
+
+
+### Population size
+
+Population size is recorded as the number of females with ...
+
+```{r}
+females.N <- c(44,47,46,44,46,
+               45,46,40,39,39,
+               42,39,41,40,33,
+               36,34,39,35,34,
+               38,36,37,41,39,
+               51,47,57,48,60,
+               65,74,69,65,57,
+               70,81,99,99)
+```
+
+### Population growth rate: example
+
+Population growth rate is 1.068182.
+
+
+```{r}
+females.N.1959 <- 44
+females.N.1960 <- 47
+```
+
+
+```{r}
+lambda.59_60 <- females.N.1960/females.N.1959
+```
+
+```{r}
+# Access the data
+females.N[1]
+females.N[2]
+
+# store in objects
+females.N.1959 <- females.N[1 ]
+females.N.1960 <- females.N[ 2]
+
+# confirm the output
+females.N.1960/females.N.1959
+```
+
+
+Calculate lambda
+```{r}
+lambda.59_60 <- females.N[2]/females.N[1]
+lambda.59_60
+```
+
+
+
+### Population growth rate: vectorized
+
+Calculating the lambda for 1959 -1960 and 1960-1961
+
+```{r}
+females.N[2:3] 
+females.N[1:2] 
+
+females.N[2:3]/females.N[1:2]
+```
+
+```{r}
+length(females.N)
+females.N[2:39]/females.N[1:38]
+```
+
+**TASK**
+Calculating the lambda for all the years from 1959-1960 up to 1986-1987.
+```{r}
+len <- length(females.N) 
+females.N[2:len]/females.N[1:len-1]
+```
+
+**TASK**
+Calculating the lambda for all the years from 1959-1960 up to 1986-1987.
+```{r}
+
+females.N[2:length(females.N)]/females.N[1:length(females.N)-1] 
+```
+
+### Negative indexing
+
+Short vector of first 10 years
+
+```{r}
+females.N[1:10]
+females.Ntemp <- females.N[1:10]
+```
+
+Check
+```{r}
+length(females.Ntemp)
+```
+
+**TASK**
+
+Removes the first value of females.Ntemp
+
+```{r}
+females.Ntemp[-1]
+```
+
+
+**TASK**
+9 lambdas calculated using the first 10 years of data
+
+```{r}
+females.Ntemp[2:10]/females.Ntemp[1:9] 
+```
+
+
+**TASK**
+Drop the the first element
+```{r}
+females.Ntemp[-1]
+```
+
+**TASK**
+Drop the second element
+```{r}
+females.Ntemp[-2]
+```
+
+
+**TASK**
+
+Drop the 10th element
+```{r}
+females.Ntemp[-10]
+```
+
+**TASK**
+Access the last element
+
+```{r}
+females.Ntemp[length(females.Ntemp)]
+```
+
+**TASK**
+Drop the last element?  
+
+```{r}
+females.Ntemp[-length(females.Ntemp)]
+```
+
+
+**TASK**
+Calculate the first 9 lambdas.
+
+```{r}
+lambda.i <- females.Ntemp[-1]/females.Ntemp[-10]
+
+```
+
+
+```{r}
+lambda.i <- females.Ntemp[-1]/females.Ntemp[-length(females.Ntemp)]
+```
+
+
+
+## Calcualte lambdas for all data
+
+**TASK**
+
+Below each bulleted line describe what the parts of the code do.  Run the code to test it.
+
+* What does females.N[-1] do?
+
+
+* What does females.N[-length(females.N)?
+
+
+**TASK**
+Calculate lambdas for all of the data
+```{r}
+females.N[-1]
+females.N[-length(females.N)]
+
+lambda.i <- females.N[-1]/females.N[-length(females.N)]
+```
+
+
+## Finish putting together dataframe
+
+
+### Create special columns
+
+**TASK**
+
+Drop NA
+
+```{r}
+lambda.i <- c(lambda.i,NA)
+```
+
+
+**TASK**
+
+Calculate natural log
+
+```{r}
+lambda_log <- log(lambda.i) # By default it will calculate the natural log
+```
+
+
+### Assemble the dataframe
+
+```{r}
+bear_N <- data.frame(census,
+                year.t,
+                females.N,
+                lambda.i, 
+                lambda_log)
+```
+
+
+**TASK**
+
+## Examing the population growth rates
+
+### Plotting the raw data
+
+**TASK**
+
+Plot time-series graph
+
+```{r}
+plot(females.N ~ year.t, data = bear_N,
+     type = "b",
+     ylab = "Population index (females + cubs)",
+     xlab = "Year")
+
+```
+```{r}
+plot(females.N ~ year.t, data = bear_N, 
+     type = "b",
+     ylab = "Population index (females + cubs)",
+     xlab = "Year")
+abline(v = 1970)
+abline(v=1987, col ="red")
+
+```
+
+
+
+## How do we determine if a population is likely to go extinct?
+
+We are interested in what the population trend of bears in the future, especially if the population is likely to go extinct by utilizing lambda. Lambda represents what the population growth rate in a year. We want to randomly pull a lambda out of a hat.
+
+```{r}
+hat_of_lambdas <- bear_N$lambda.i
+```
+is.na() returns a vector of boolean for if value is NA
+```{r}
+is.na(hat_of_lambdas)
+```
+
+
+```{r}
+any(is.na(hat_of_lambdas) == TRUE)
+```
+
+
+Drop the NA
+
+```{r}
+length(hat_of_lambdas)
+hat_of_lambdas[39]
+hat_of_lambdas[-39]
+hat_of_lambdas[-length(hat_of_lambdas)]
+```
+
+na.omit() removes all the NA from the original vector
+```{r}
+na.omit(hat_of_lambdas)
+```
+
+
+
+```{r}
+hat_of_lambdas <- hat_of_lambdas[-length(hat_of_lambdas)]
+```
+
+
+```{r}
+hist(hat_of_lambdas)
+```
+
+
+
+## Creating a Random Sample of Lambdas
+
+We are picking 50 random values of lambdas from a hat. After each pick we are placing the lambda back into the hat.
+
+```{r}
+# Pulled a random lambda value from the hat.
+sample(x = hat_of_lambdas, size = 1,replace = TRUE)
+lambda_rand.t <- sample(x = hat_of_lambdas, size = 1,replace = TRUE)
+lambda_rand.t
+```
+
+
+Head and tail are function that allow you to show the top and bottom respectivly of a data frame
+
+```{r}
+head(bear_N) #shows ffirst 6 values
+tail(bear_N) #shows last 6 values
+N.1997 <- 99
+summary(bear_N)
+dim(bear_N)
+N.1997 = 99
+```
+
+
+##One round of population simulation 
+
+Predicting the number of bears in 1998
+```{r}
+1.22807*99
+lambda_rand.t*N.1997
+N.1998 <- lambda_rand.t*N.1997
+```
+
+
+## Simulation the hard way
+
+```{r}
+#1997-1998
+lambda_rand.t <- sample(x = hat_of_lambdas, size = 1,replace = TRUE)
+N.1998 <- lambda_rand.t*N.1997
+#1998-1999
+lambda_rand.t <- sample(x = hat_of_lambdas, size = 1,replace = TRUE)
+N.1999 <- lambda_rand.t*N.1998
+#1999-2000
+lambda_rand.t <- sample(x = hat_of_lambdas, size = 1,replace = TRUE)
+N.2000 <- lambda_rand.t*N.1999
+#2000-2001
+lambda_rand.t <- sample(x = hat_of_lambdas, size = 1,replace = TRUE)
+N.2001 <- lambda_rand.t*N.2000
+#2001-2002
+lambda_rand.t <- sample(x = hat_of_lambdas, size = 1,replace = TRUE)
+N.2002 <- lambda_rand.t*N.2001
+#2002-2003
+lambda_rand.t <- sample(x = hat_of_lambdas, size = 1,replace = TRUE)
+N.2003 <- lambda_rand.t*N.2002
+#2003-2004
+lambda_rand.t <- sample(x = hat_of_lambdas, size = 1,replace = TRUE)
+N.2004 <- lambda_rand.t*N.2003
+#2004-2005
+lambda_rand.t <- sample(x = hat_of_lambdas, size = 1,replace = TRUE)
+N.2005 <- lambda_rand.t*N.2004
+N.2005
+```
+
+
+## Plotting the Simulation
+
+After running the simulation in the previous block we are creating a dataframe and than a graphing Population vs Year.
+
+```{r}
+year <- seq(1997, 2004)
+N.rand <- c(N.1998,N.1999,N.2000,N.2001,N.2002,N.2003,N.2004,N.2005)
+df.rand <- data.frame(N.rand, year)
+plot(N.rand ~ year, data = df.rand, type = "b")
+```
+
+##  For loop frame wihthout For loop
+We are creating the framework of what the for loop will iterate a set number of times
+
+```{r}
+# Creating the simulation with and without a For loop
+
+N.1997 <- 99
+N.initial <- 99
+
+# Using xlim = argument
+plot(N.1997 ~ c(1997)) # Plots a single point
+plot(N.1997 ~ c(1997), 
+     xlim = c(1997, 1997+50)) # Sets the max value of x-axis
+plot(N.1997 ~ c(1997), 
+     xlim = c(1997, 1997+50), 
+     ylim = c(0, 550))
+
+# For loop the hard way
+#
+N.current <- N.initial
+
+# Where the for loop would be
+t <- 1 #year one of 50
+  
+  # Grab a random lambda
+  lambda_rand.t <- sample(x = hat_of_lambdas, size = 1,replace = TRUE)
+  
+  # Calculate the population size of next year
+  N.t <- N.current*lambda_rand.t
+  
+  # The current year after simulation
+  year.t <- 1997+t
+  
+  # Add the point to the original plot 
+  #points() updates an old plot by adding a point
+  points(N.t ~ year.t)
+  
+  # Updating the current population
+  N.current <- N.t
+
+```
+
+
+Utilizing a for loop to run a simulation of 50 years with a for loop
+
+
+```{r}
+
+# Create a base plot
+plot(N.1997 ~ c(1997), xlim = c(1997, 1997+50), ylim = c(0, 550))
+
+N.current <- N.1997
+
+# This is the for loop for t values 1-50
+for(t in 1:50){
+  
+  # Picking a random lambda
+  lambda_rand.t <- sample(x = hat_of_lambdas, 
+                          size = 1,
+                          replace = TRUE)
+  
+  # Calculating the new population
+  N.t <- N.current*lambda_rand.t
+  
+  # Changing what the current year is
+  year.t <- 1997+t
+  
+  # Adding the new population to the original plot
+  points(N.t ~ year.t)
+  
+  # Updating the current population
+}
+```
+
+
+
+Goofy R plotting code/magic
+```{r}
+par(mfrow = c(3,3), mar = c(1,1,1,1))
+```
+Running the simulation nine different times and creating a graph for each simulation
+```{r}
+plot(N.1997 ~ c(1997), xlim = c(1997, 1997+50), ylim = c(0, 550))
+N.current <- N.1997
+for(t in 1:50){
+  
+  lambda_rand.t <- sample(x = hat_of_lambdas, 
+                          size = 1,
+                          replace = TRUE)
+  
+  N.t <- N.current*lambda_rand.t
+  
+  year.t <- 1997+t
+  
+  points(N.t ~ year.t)
+  
+  N.current <- N.t
+}
+```
