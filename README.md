@@ -5,13 +5,14 @@ Github currently formatted to comply with academic policies. Currently reformatt
 
 Current Contents:
 
-Algorithm Design: Java - 5 Projects
+Algorithm Design: Java - 5 Project
 
 Computational Biology/Genomics: R - 4 Projects
 
 Data Science: Python, SQL - 5 Projects
 
 ML: R, Python - 10 Projects
+(Theory directory -> ML algorithms & probabilistic programming)
 
 
 #About Me
