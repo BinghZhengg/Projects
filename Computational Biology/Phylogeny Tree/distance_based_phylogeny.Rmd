@@ -1,6 +1,6 @@
 ---
 title: "Distance-based phylogenetic trees in R"
-author: "Nathan Brouwer"
+author: "Binghan Zheng"
 date: "10/8/2020"
 output: html_document
 ---
