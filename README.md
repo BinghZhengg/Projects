@@ -1,5 +1,20 @@
 # Projects
-This is Binghan Zheng's repository for all completed and current projects. 
+This is Binghan Zheng's repository for all completed projects
+
+Github currently formatted to comply with academic policies. Currently reformatting and transferring projects, more incoming.
+
+Current Contents:
+
+Algorithm Design: Java - 5 Projects
+
+Computational Biology/Genomics: R - 4 Projects
+
+Data Science: Python, SQL - 5 Projects
+
+ML: R, Python - 10 Projects
+
+
+#About Me
 
 2022 Graduate
 Major: Computational Biology (2019-2022)
@@ -7,20 +22,7 @@ Focus in machine learning and systems biology
 Minor: Political Science
 Focus in international politics and sustainability
 
-I enjoy working in interdisciplinary environment and look forward to developing software tools using machine learning, data mining algorithms to further research biological systems.
-
-Specifically interested in biological regulatory networks.
-
 Capstone Research: Computer Aided Drug Design
-
-Github link currently formatted to comply with academic policies. Currently reformatting and transferring projects, more incoming.
-
-Current Contents:
-
-Algorithm Design: Java - 5 Projects
-Computational Biology/Genomics: R - 4 Projects
-Data Science: Python, SQL - 5 Projects
-ML: R, Python - 10 Projects
 
 As of now, the following project code will not be uploaded due to confidentiality issues.
 
